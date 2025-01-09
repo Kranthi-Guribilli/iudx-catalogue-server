@@ -63,7 +63,7 @@ public class ExceptionHandler implements Handler<RoutingContext> {
   }
 
   /**
-   * Handles the exception from casting a object to different object.
+   * Handles the exception from casting an object to different object.
    * 
    *@param routingContext the routing context of the request
    */

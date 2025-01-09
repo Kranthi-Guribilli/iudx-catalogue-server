@@ -1,6 +1,7 @@
 package iudx.catalogue.server.authenticator.authorization;
 
-import static iudx.catalogue.server.authenticator.authorization.Method.*;
+import static iudx.catalogue.server.authenticator.authorization.Method.DELETE;
+import static iudx.catalogue.server.authenticator.authorization.Method.POST;
 import static iudx.catalogue.server.util.Constants.ITEM_TYPE_PROVIDER;
 
 import iudx.catalogue.server.util.Api;

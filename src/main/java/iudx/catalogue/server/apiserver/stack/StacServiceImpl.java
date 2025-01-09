@@ -1,6 +1,8 @@
 package iudx.catalogue.server.apiserver.stack;
 
 import static iudx.catalogue.server.apiserver.stack.StackConstants.DOC_ID;
+import static iudx.catalogue.server.database.elastic.util.Constants.SUMMARY_KEY;
+import static iudx.catalogue.server.database.elastic.util.Constants.WORD_VECTOR_KEY;
 import static iudx.catalogue.server.util.Constants.*;
 import static iudx.catalogue.server.util.Constants.TITLE_ITEM_NOT_FOUND;
 
@@ -8,8 +10,12 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import iudx.catalogue.server.database.ElasticClient;
-import iudx.catalogue.server.database.RespBuilder;
+import iudx.catalogue.server.common.util.DbResponseMessageBuilder;
+import iudx.catalogue.server.common.RespBuilder;
+import iudx.catalogue.server.database.elastic.model.ElasticsearchResponse;
+import iudx.catalogue.server.database.elastic.model.QueryModel;
+import iudx.catalogue.server.database.elastic.service.ElasticsearchService;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -20,14 +26,14 @@ public class StacServiceImpl implements StacSevice {
 
   private static final Logger LOGGER = LogManager.getLogger(StacServiceImpl.class);
 
-  private final ElasticClient elasticClient;
+  private final ElasticsearchService esService;
   private final String index;
   RespBuilder respBuilder;
   Supplier<String> idSuppler = () -> UUID.randomUUID().toString();
   private QueryBuilder queryBuilder = new QueryBuilder();
 
-  public StacServiceImpl(ElasticClient elasticClient, String index) {
-    this.elasticClient = elasticClient;
+  public StacServiceImpl(ElasticsearchService esService, String index) {
+    this.esService = esService;
     this.index = index;
   }
 
@@ -38,16 +44,27 @@ public class StacServiceImpl implements StacSevice {
   @Override
   public Future<JsonObject> get(String stackId) {
     Promise<JsonObject> promise = Promise.promise();
-    String query = queryBuilder.getQuery(stackId);
-    elasticClient.searchAsync(
-        query.toString(),
-        index,
-        clientHandler -> {
+    QueryModel query = queryBuilder.getQuery(stackId);
+    QueryModel queryModel = new QueryModel();
+    queryModel.setQueries(query);
+    esService.search(index, queryModel)
+        .onComplete(clientHandler -> {
           if (clientHandler.succeeded()) {
             LOGGER.debug("Success: Successful DB request");
-            JsonObject result = clientHandler.result();
-            if (result.getInteger(TOTAL_HITS) > 0) {
-              promise.complete(result);
+            List<ElasticsearchResponse> responseList = clientHandler.result();
+            DbResponseMessageBuilder result = new DbResponseMessageBuilder();
+            result.statusSuccess();
+            result.setTotalHits(responseList.size());
+            responseList.stream()
+                .map(ElasticsearchResponse::getSource)
+                .peek(source -> {
+                  source.remove(SUMMARY_KEY);
+                  source.remove(WORD_VECTOR_KEY);
+                })
+                .forEach(result::addResult);
+
+            if (result.getResponse().getInteger(TOTAL_HITS) > 0) {
+              promise.complete(result.getResponse());
             } else {
               LOGGER.error("Fail: Item not found");
               respBuilder =
@@ -78,22 +95,19 @@ public class StacServiceImpl implements StacSevice {
   @Override
   public Future<JsonObject> create(JsonObject request) {
     LOGGER.debug("create () method started");
-    String query = queryBuilder.getQuery4CheckExistence(request);
+    QueryModel query = queryBuilder.getQuery4CheckExistence(request);
+    QueryModel queryModel = new QueryModel();
+    queryModel.setQueries(query);
     String id = idSuppler.get();
     request.put(ID, id);
     LOGGER.info("id :{}", request);
     Promise<JsonObject> promise = Promise.promise();
-    elasticClient.searchAsync(
-        query,
-        index,
-        searchHandler -> {
+    esService.search(index, queryModel)
+        .onComplete(searchHandler -> {
           if (searchHandler.succeeded()) {
-            JsonObject searchResult = searchHandler.result();
-            if (searchResult.getInteger("totalHits") == 0) {
-              elasticClient.docPostAsync(
-                  index,
-                  request.toString(),
-                  postHandler -> {
+            if (searchHandler.result().isEmpty()) {
+              esService.createDocument(index, request)
+                  .onComplete(postHandler -> {
                     if (postHandler.succeeded()) {
                       LOGGER.info("Success: Stac creation");
                       JsonObject result = postHandler.result();
@@ -195,10 +209,8 @@ public class StacServiceImpl implements StacSevice {
                 JsonObject result = existHandler.result();
                 String docId = result.getString(DOC_ID);
 
-                elasticClient.docDelAsync(
-                    docId,
-                    index,
-                    deleteHandler -> {
+                esService.deleteDocument(index, docId)
+                    .onComplete(deleteHandler -> {
                       if (deleteHandler.succeeded()) {
                         LOGGER.info("Deletion success :{}", deleteHandler.result());
                         respBuilder =
@@ -238,20 +250,19 @@ public class StacServiceImpl implements StacSevice {
     LOGGER.debug("isExist () method started");
     Promise<JsonObject> promise = Promise.promise();
     LOGGER.debug("stacId: {}", id);
-    String query = queryBuilder.getQuery(id);
-    LOGGER.error(elasticClient);
+    QueryModel query = queryBuilder.getQuery(id);
+    QueryModel queryModel = new QueryModel();
+    queryModel.setQueries(query);
 
-    elasticClient.searchAsyncGetId(
-        query,
-        index,
-        existHandler -> {
+    esService.search(index, query)
+        .onComplete(existHandler -> {
           LOGGER.error("existHandler succeeded " + existHandler.succeeded());
           if (existHandler.failed()) {
             LOGGER.error("Fail: Check Query Fail : {}", existHandler.cause().getMessage());
             promise.fail("Fail: Check Query Fail : " + existHandler.cause().getMessage());
             return;
           }
-          if (existHandler.result().getInteger(TOTAL_HITS) == 0) {
+          if (existHandler.result().isEmpty()) {
             LOGGER.debug("success: existHandler " + existHandler.result());
             respBuilder =
                 new RespBuilder()
@@ -261,9 +272,20 @@ public class StacServiceImpl implements StacSevice {
             promise.fail(respBuilder.getResponse());
           } else {
             try {
+              List<ElasticsearchResponse> response = existHandler.result();
+              DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
+              responseMsg.statusSuccess().setTotalHits(response.size());
+              response.stream()
+                  .map(elasticResponse -> {
+                    JsonObject json = new JsonObject();
+                    json.put(SOURCE, elasticResponse.getSource());
+                    json.put("doc_id", elasticResponse.getId());
+                    return json;
+                  })
+                  .forEach(responseMsg::addResult);
               LOGGER.debug(existHandler.result());
               JsonObject result =
-                  new JsonObject(existHandler.result().getJsonArray(RESULTS).getString(0));
+                  new JsonObject(responseMsg.getResponse().getJsonArray(RESULTS).getString(0));
               promise.complete(result);
             } catch (Exception e) {
               LOGGER.error("Fail: Parsing result : {}", e.getMessage());
@@ -309,11 +331,8 @@ public class StacServiceImpl implements StacSevice {
     String query = queryBuilder.getPatchQuery(request);
     LOGGER.debug("patchQuery:: " + query);
     Promise<JsonObject> promise = Promise.promise();
-    elasticClient.docPatchAsync(
-        docId,
-        index,
-        query,
-        patchHandler -> {
+    esService.patchDocument(index, docId, JsonObject.mapFrom(query))
+        .onComplete(patchHandler -> {
           if (patchHandler.succeeded()) {
 
             JsonObject result = patchHandler.result();
