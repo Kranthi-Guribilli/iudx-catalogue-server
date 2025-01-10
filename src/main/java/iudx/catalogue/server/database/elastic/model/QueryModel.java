@@ -497,7 +497,11 @@ public class QueryModel {
           Map<String, JsonData> params = new HashMap<>();
           params.put("query_vector", JsonData.fromJson(vectorString));
           // Use MatchAllQuery if custom query is not provided
-          QueryModel customQueryModel = (QueryModel) queryParameters.get("custom_query");
+          QueryModel customQueryModel = null;
+          if (queryParameters.get("custom_query") != null) {
+            customQueryModel =
+                new QueryModel(JsonObject.mapFrom(queryParameters.get("custom_query")));
+            }
           Query baseQuery = (customQueryModel != null)
               ? customQueryModel.toElasticsearchQuery()
               : MatchAllQuery.of(m -> m)._toQuery();

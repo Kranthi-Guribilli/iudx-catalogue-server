@@ -469,10 +469,12 @@ public final class SearchController {
             return scriptLocationSearch(embeddings, (JsonObject) param);
           } catch (Exception e) {
             LOGGER.error("Error during scriptLocationSearch for param: " + param, e);
-            return Future.failedFuture(e);
+            return Future.failedFuture(e); // returns a Future<JsonObject> in case of an error
           }
         })
         .collect(Collectors.toList());
+
+
 
     // When all futures return, respond back with the result object in the response
     CompositeFuture.all(futures)
@@ -504,92 +506,95 @@ public final class SearchController {
 
   private Future<JsonObject> scriptLocationSearch(JsonArray embeddings, JsonObject param) {
     Promise<JsonObject> promise = Promise.promise();
-    QueryModel queryModel = generateGeoScriptScoreQuery(param, embeddings);
-    esService.search(docIndex, queryModel)
-        .onSuccess(searchRes -> {
-          LOGGER.debug("Success: Successful DB request");
-          DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
-          responseMsg.statusSuccess().setTotalHits(searchRes.size());
-          searchRes.stream()
-              .map(ElasticsearchResponse::getSource)
-              .peek(source -> {
-                source.remove(SUMMARY_KEY);
-                source.remove(WORD_VECTOR_KEY);
-              })
-              .forEach(responseMsg::addResult);
-          promise.complete(responseMsg.getResponse());
-        }).onFailure(throwable -> {
-          LOGGER.debug("Fail: {}", throwable.getLocalizedMessage());
-          promise.fail(internalErrorResp());
-        });
+    QueryModel queryModel = new QueryModel();
+    queryModel.setQueries(generateGeoScriptScoreQuery(param, embeddings));
+    queryModel.setExcludeFields(List.of("_word_vector"));
+    esService
+        .search(docIndex, queryModel)
+        .onSuccess(
+            searchRes -> {
+              LOGGER.debug("Success: Successful DB request");
+              DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
+              responseMsg.statusSuccess().setTotalHits(searchRes.size());
+              searchRes.stream()
+                  .map(ElasticsearchResponse::getSource)
+                  .peek(
+                      source -> {
+                        source.remove(SUMMARY_KEY);
+                        source.remove(WORD_VECTOR_KEY);
+                      })
+                  .forEach(responseMsg::addResult);
+              promise.complete(responseMsg.getResponse());
+            })
+        .onFailure(
+            throwable -> {
+              LOGGER.debug("Fail: {}", throwable.getLocalizedMessage());
+              promise.fail(internalErrorResp());
+            });
     return promise.future();
   }
 
   public QueryModel generateGeoScriptScoreQuery(JsonObject queryParams, JsonArray queryVector) {
-    // List to store the should clauses
-    List<QueryModel> shouldQueries = new ArrayList<>();
+
+    QueryModel boolQueryModel = new QueryModel(QueryType.BOOL);
 
     // Adding MatchQuery clauses for each of the fields based on the queryParams
     if (queryParams.containsKey(BOROUGH)) {
-      shouldQueries.add(new QueryModel(QueryType.MATCH, Map.of(
+      boolQueryModel.addShouldQuery(new QueryModel(QueryType.MATCH, Map.of(
           FIELD, "_geosummary._geocoded.results.borough",
           VALUE, queryParams.getString(BOROUGH)
       )));
     }
     if (queryParams.containsKey(LOCALITY)) {
-      shouldQueries.add(new QueryModel(QueryType.MATCH, Map.of(
+      boolQueryModel.addShouldQuery(new QueryModel(QueryType.MATCH, Map.of(
           FIELD, "_geosummary._geocoded.results.locality",
           VALUE, queryParams.getString(LOCALITY)
       )));
     }
     if (queryParams.containsKey(COUNTY)) {
-      shouldQueries.add(new QueryModel(QueryType.MATCH, Map.of(
+      boolQueryModel.addShouldQuery(new QueryModel(QueryType.MATCH, Map.of(
           FIELD, "_geosummary._geocoded.results.county",
           VALUE, queryParams.getString(COUNTY)
       )));
     }
     if (queryParams.containsKey(REGION)) {
-      shouldQueries.add(new QueryModel(QueryType.MATCH, Map.of(
+      boolQueryModel.addShouldQuery(new QueryModel(QueryType.MATCH, Map.of(
           FIELD, "_geosummary._geocoded.results.region",
           VALUE, queryParams.getString(REGION)
       )));
     }
     if (queryParams.containsKey(COUNTRY)) {
-      shouldQueries.add(new QueryModel(QueryType.MATCH, Map.of(
+      boolQueryModel.addShouldQuery(new QueryModel(QueryType.MATCH, Map.of(
           FIELD, "_geosummary._geocoded.results.country",
           VALUE, queryParams.getString(COUNTRY)
       )));
     }
 
-    // Add the should queries to the BoolQuery
-    QueryModel boolQueryModel = new QueryModel(QueryType.BOOL);
-    boolQueryModel.setShouldQueries(shouldQueries);
     // Set minimum_should_match to 1
     boolQueryModel.setMinimumShouldMatch("1");
 
     // Geo shape filter
     if (queryParams.containsKey(BBOX)) {
       JsonArray bboxCoords = queryParams.getJsonArray(BBOX);
-      boolQueryModel.setFilterQueries(List.of(
+      JsonArray coordinates = new JsonArray()
+          .add(new JsonArray()
+              .add(bboxCoords.getFloat(0)) // minLon
+              .add(bboxCoords.getFloat(3))) // maxLat
+          .add(new JsonArray()
+              .add(bboxCoords.getFloat(2)) // maxLon
+              .add(bboxCoords.getFloat(1))); // minLat
+      boolQueryModel.addFilterQuery(
           new QueryModel(QueryType.GEO_SHAPE, Map.of(
               GEOPROPERTY, "location.geometry",
-              TYPE, "envelope",
-              COORDINATES, List.of(
-                  List.of(bboxCoords.getFloat(0), bboxCoords.getFloat(3)),
-                  List.of(bboxCoords.getFloat(2), bboxCoords.getFloat(1))
-              ),
-              "relation", "intersects"
-          ))
-      ));
+              TYPE, GEO_BBOX,
+              COORDINATES, coordinates,
+              "relation", INTERSECTS
+          )));
     }
-    // Script score for cosine similarity
-    QueryModel scriptScoreQuery = new QueryModel(QueryType.SCRIPT_SCORE, Map.of(
-        "query_vector", queryVector, "custom_query", boolQueryModel));
 
-    QueryModel queryModel = new QueryModel(QueryType.SCRIPT_SCORE);
-    queryModel.setQueries(scriptScoreQuery);
-    queryModel.setExcludeFields(List.of("_word_vector"));
-    return queryModel;
+    // Script score for cosine similarity
+    return new QueryModel(QueryType.SCRIPT_SCORE, Map.of(
+        "query_vector", queryVector, "custom_query", boolQueryModel.toJson()));
   }
 
 }
