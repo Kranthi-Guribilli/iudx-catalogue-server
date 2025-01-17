@@ -15,6 +15,7 @@ import iudx.catalogue.server.common.RespBuilder;
 import iudx.catalogue.server.database.elastic.model.ElasticsearchResponse;
 import iudx.catalogue.server.database.elastic.model.QueryModel;
 import iudx.catalogue.server.database.elastic.service.ElasticsearchService;
+import iudx.catalogue.server.database.elastic.util.Constants;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -208,7 +209,6 @@ public class StacServiceImpl implements StacSevice {
               if (existHandler.succeeded()) {
                 JsonObject result = existHandler.result();
                 String docId = result.getString(DOC_ID);
-
                 esService.deleteDocument(index, docId)
                     .onComplete(deleteHandler -> {
                       if (deleteHandler.succeeded()) {
@@ -254,9 +254,9 @@ public class StacServiceImpl implements StacSevice {
     QueryModel queryModel = new QueryModel();
     queryModel.setQueries(query);
 
-    esService.search(index, query)
+    esService.search(index, queryModel)
         .onComplete(existHandler -> {
-          LOGGER.error("existHandler succeeded " + existHandler.succeeded());
+          LOGGER.debug("existHandler succeeded " + existHandler.succeeded());
           if (existHandler.failed()) {
             LOGGER.error("Fail: Check Query Fail : {}", existHandler.cause().getMessage());
             promise.fail("Fail: Check Query Fail : " + existHandler.cause().getMessage());
@@ -279,7 +279,7 @@ public class StacServiceImpl implements StacSevice {
                   .map(elasticResponse -> {
                     JsonObject json = new JsonObject();
                     json.put(SOURCE, elasticResponse.getSource());
-                    json.put("doc_id", elasticResponse.getId());
+                    json.put(DOC_ID, elasticResponse.getId());
                     return json;
                   })
                   .forEach(responseMsg::addResult);

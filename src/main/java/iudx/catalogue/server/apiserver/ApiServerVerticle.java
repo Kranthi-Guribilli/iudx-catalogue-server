@@ -18,7 +18,6 @@ import iudx.catalogue.server.apiserver.Item.service.ItemService;
 import iudx.catalogue.server.apiserver.Item.service.ItemServiceImpl;
 import iudx.catalogue.server.apiserver.crud.CrudController;
 import iudx.catalogue.server.apiserver.crud.CrudService;
-import iudx.catalogue.server.apiserver.util.ExceptionHandler;
 import iudx.catalogue.server.auditing.service.AuditingService;
 import iudx.catalogue.server.authenticator.handler.AuthHandler;
 import iudx.catalogue.server.authenticator.handler.ValidateAccessHandler;
@@ -140,7 +139,6 @@ public class ApiServerVerticle extends AbstractVerticle {
     NLPSearchService nlpsearchService = NLPSearchService.createProxy(vertx, NLP_SERVICE_ADDRESS);
 
     AuditingService auditingService = AuditingService.createProxy(vertx, AUDITING_SERVICE_ADDRESS);
-    ExceptionHandler exceptionhandler = new ExceptionHandler();
     FailureHandler failureHandler = new FailureHandler();
 
     ItemService itemService;
@@ -251,8 +249,8 @@ public class ApiServerVerticle extends AbstractVerticle {
     router
         .route(api.getStackRestApis() + "/*")
         .subRouter(
-            new StacRestApi(router, api, config(), validationService, authService,
-                auditingService, elasticsearchService)
+            new StacController(router, api, config(), validationService, authService,
+                auditingService, elasticsearchService, authHandler, failureHandler)
                 .init());
 
     // Start server
