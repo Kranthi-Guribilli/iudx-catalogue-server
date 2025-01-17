@@ -47,7 +47,10 @@ public class ResourceGroup implements Item {
 
   private void validateFields() {
     if (id == null || !UUID_PATTERN.matcher(id.toString()).matches()) {
-      throw new IllegalArgumentException("Invalid ID format");
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_PATTERN, id
+      ));
     }
     if (name == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"name\"])])");

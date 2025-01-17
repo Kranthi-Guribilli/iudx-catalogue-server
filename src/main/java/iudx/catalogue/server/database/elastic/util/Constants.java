@@ -281,14 +281,14 @@ public class Constants {
   public static final String INSTANCE_NOT_EXISTS = "instance doesn't exist";
   static final String DESCRIPTION = "detail";
   static final String HTTP = "http";
-  static final String SHAPE_KEY = "shape";
+  public static final String SHAPE_KEY = "shape";
   /* Database */
-  static final String AGGREGATION_KEY = "aggs";
+  public static final String AGGREGATION_KEY = "aggs";
   static final String FILTER_RATING_AGGREGATION = "?filter_path=hits.total.value,aggregations";
   static final String DISTANCE_IN_METERS = "m";
   static final String GEO_RADIUS = "radius";
   static final String GEO_RELATION_KEY = "relation";
-  static final String GEO_SHAPE_KEY = "geo_shape";
+  public static final String GEO_SHAPE_KEY = "geo_shape";
   static final String EMPTY_RESPONSE = "Empty response";
   static final String COUNT_UNSUPPORTED = "Count is not supported with filtering";
   static final String INVALID_SEARCH = "Invalid search request";

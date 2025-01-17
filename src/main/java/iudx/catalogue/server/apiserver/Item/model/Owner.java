@@ -42,7 +42,10 @@ public class Owner implements Item {
   private void validateFields() {
     if (id == null || !id.toString().matches(ID_REGEX)) {
       LOGGER.debug(id);
-      throw new IllegalArgumentException("Invalid ID format");
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          ID_REGEX, id
+      ));
     }
     if (name == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"name\"])])");

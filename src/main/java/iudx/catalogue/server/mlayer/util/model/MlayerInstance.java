@@ -125,7 +125,7 @@ public class MlayerInstance {
                           .getResponse());
               return;
             }
-            String docId = checkRes.result().getFirst().getId();
+            String docId = checkRes.result().get(0).getId();
 
             esService.deleteDocument(mlayerInstanceIndex, docId)
                 .onComplete(delRes -> {
@@ -169,7 +169,7 @@ public class MlayerInstance {
 
           } else {
             if (!res.result().isEmpty()) {
-              JsonObject json = res.result().getFirst().getSource();
+              JsonObject json = res.result().get(0).getSource();
               String instanceIdExists = json.getString(INSTANCE_ID);
 
               promise.fail(
@@ -234,12 +234,12 @@ public class MlayerInstance {
                           .getResponse());
               return;
             }
-            JsonObject source = checkRes.result().getFirst().getSource();
+            JsonObject source = checkRes.result().get(0).getSource();
 
             String parameterIdName = source.getString("name").toLowerCase();
             String requestBodyName = request.getString("name").toLowerCase();
             if (parameterIdName.equals(requestBodyName)) {
-              String docId = checkRes.result().getFirst().getId();
+              String docId = checkRes.result().get(0).getId();
               esService.updateDocument(mlayerInstanceIndex, docId, request)
                   .onComplete(putRes -> {
                     if (putRes.succeeded()) {

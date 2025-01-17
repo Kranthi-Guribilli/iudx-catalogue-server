@@ -34,7 +34,6 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import iudx.catalogue.server.apiserver.util.ExceptionHandler;
 import iudx.catalogue.server.apiserver.util.RespBuilder;
 import iudx.catalogue.server.auditing.service.AuditingService;
 import iudx.catalogue.server.authenticator.handler.AuthHandler;

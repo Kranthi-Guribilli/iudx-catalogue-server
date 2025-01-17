@@ -107,10 +107,10 @@ public class MlayerDataset {
               return;
             }
             String providerId =
-                handlerRes.result().getFirst().getSource().getString("provider");
+                handlerRes.result().get(0).getSource().getString("provider");
             String cosId = "";
-            if (handlerRes.result().getFirst().getSource().containsKey("cos")) {
-              cosId = handlerRes.result().getFirst().getSource().getString("cos");
+            if (handlerRes.result().get(0).getSource().containsKey("cos")) {
+              cosId = handlerRes.result().get(0).getSource().getString("cos");
             }
 
             /*

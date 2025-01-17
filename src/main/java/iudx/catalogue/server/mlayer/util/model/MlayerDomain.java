@@ -79,7 +79,7 @@ public class MlayerDomain {
 
           } else {
             if (!res.result().isEmpty()) {
-              JsonObject json = res.result().getFirst().getSource();
+              JsonObject json = res.result().get(0).getSource();
               String domainIdExists = json.getString(DOMAIN_ID);
               promise.fail(
                   respBuilder
@@ -187,12 +187,12 @@ public class MlayerDomain {
               return;
             }
 
-            JsonObject source = checkRes.result().getFirst().getSource();
+            JsonObject source = checkRes.result().get(0).getSource();
 
             String parameterIdName = source.getString("name").toLowerCase();
             String requestBodyName = request.getString("name").toLowerCase();
             if (parameterIdName.equals(requestBodyName)) {
-              String docId = checkRes.result().getFirst().getId();
+              String docId = checkRes.result().get(0).getId();
               esService.updateDocument(mlayerDomainIndex, docId, request)
                   .onComplete(putRes -> {
                     if (putRes.succeeded()) {
@@ -250,7 +250,7 @@ public class MlayerDomain {
               return;
             }
 
-            String docId = checkRes.result().getFirst().getId();
+            String docId = checkRes.result().get(0).getId();
 
             esService.deleteDocument(mlayerDomainIndex, docId)
                 .onComplete(putRes -> {

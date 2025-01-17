@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
 
-
 public class COS implements Item {
   private static final String UUID_REGEX =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
@@ -53,7 +52,10 @@ public class COS implements Item {
 
   private void validateFields() {
     if (id == null || !id.toString().matches(UUID_REGEX)) {
-      throw new IllegalArgumentException("Invalid ID format");
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_REGEX, id
+      ));
     }
     if (name == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"name\"])])");

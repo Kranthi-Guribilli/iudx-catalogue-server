@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 public class GeocodingServiceImpl implements GeocodingService {
 
   private static final Logger LOGGER = LogManager.getLogger(GeocodingServiceImpl.class);
-  static WebClient webClient;
+  public static WebClient webClient;
   private final String peliasUrl;
   private final int peliasPort;
 

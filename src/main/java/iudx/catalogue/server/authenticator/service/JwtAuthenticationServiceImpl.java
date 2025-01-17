@@ -144,7 +144,7 @@ public class JwtAuthenticationServiceImpl implements AuthenticationService {
     return itemType;
   }
 
-  Future<Boolean> isValidAudienceValue(JwtData jwtData, String itemType, String serverUrl) {
+  public Future<Boolean> isValidAudienceValue(JwtData jwtData, String itemType, String serverUrl) {
     Promise<Boolean> promise = Promise.promise();
     LOGGER.debug("itemType: " + itemType);
 
@@ -176,7 +176,7 @@ public class JwtAuthenticationServiceImpl implements AuthenticationService {
     return promise.future();
   }
 
-  Future<Boolean> isValidProvider(JwtData jwtData, String provider) {
+  public Future<Boolean> isValidProvider(JwtData jwtData, String provider) {
     Promise<Boolean> promise = Promise.promise();
 
     String jwtId = "";
@@ -199,7 +199,7 @@ public class JwtAuthenticationServiceImpl implements AuthenticationService {
     return promise.future();
   }
 
-  Future<Boolean> isValidEndpoint(String endPoint) {
+  public Future<Boolean> isValidEndpoint(String endPoint) {
     Promise<Boolean> promise = Promise.promise();
 
     LOGGER.debug("Endpoint in JWt is : " + endPoint);

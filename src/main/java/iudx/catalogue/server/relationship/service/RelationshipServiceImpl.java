@@ -107,7 +107,7 @@ public class RelationshipServiceImpl implements RelationshipService {
               itemNotFoundResponse("Item id given is not present"));
           return;
         }
-        JsonObject relType = queryHandler.result().getFirst().getSource();
+        JsonObject relType = queryHandler.result().get(0).getSource();
 
         Set<String> type = new HashSet<String>(relType.getJsonArray(TYPE).getList());
         type.retainAll(ITEM_TYPES);
@@ -237,7 +237,7 @@ public class RelationshipServiceImpl implements RelationshipService {
         .onComplete(
             serverSearch -> {
               if (serverSearch.succeeded() && !serverSearch.result().isEmpty()) {
-                JsonObject serverResult = serverSearch.result().getFirst().getSource();
+                JsonObject serverResult = serverSearch.result().get(0).getSource();
                 serverResult.remove(SUMMARY_KEY);
                 serverResult.remove(WORD_VECTOR_KEY);
                 request.mergeIn(serverResult);

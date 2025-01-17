@@ -380,7 +380,7 @@ public class RatingServiceImpl implements RatingService {
               ratingId, UPDATE, "Fail: Doc doesn't exist, can't update"));
           return;
         }
-        String docId = checkRes.result().getFirst().getId();
+        String docId = checkRes.result().get(0).getId();
         esService.updateDocument(ratingIndex, docId, ratingDoc)
             .onComplete(putRes -> {
               if (putRes.failed()) {
@@ -420,7 +420,7 @@ public class RatingServiceImpl implements RatingService {
               ratingId, DELETE, "Fail: Doc doesn't exist, can't delete"));
           return;
         }
-        String docId = checkRes.result().getFirst().getId();
+        String docId = checkRes.result().get(0).getId();
         esService.deleteDocument(ratingIndex, docId)
             .onComplete(delRes -> {
               if (delRes.succeeded()) {
@@ -435,7 +435,7 @@ public class RatingServiceImpl implements RatingService {
     return promise.future();
   }
 
-  Future<JsonObject> getAuditingInfo(StringBuilder query) {
+  public Future<JsonObject> getAuditingInfo(StringBuilder query) {
     Promise<JsonObject> promise = Promise.promise();
     postgresService.executeCountQuery(query.toString()).onComplete(pgHandler -> {
       if (pgHandler.succeeded()) {
@@ -447,7 +447,7 @@ public class RatingServiceImpl implements RatingService {
     return promise.future();
   }
 
-  void publishMessage(QueryObject rmqMessage) {
+  public void publishMessage(QueryObject rmqMessage) {
     rmqService.publishMessage(rmqMessage, ratingExchangeName, "#").onComplete(
         handler -> {
           if (handler.succeeded()) {
