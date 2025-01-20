@@ -237,7 +237,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
           String id = hit.id();
           JsonObject source =
               hit.source() != null ? JsonObject.mapFrom(hit.source()) : new JsonObject();
-          return new ElasticsearchResponse(id, source, null);
+          return new ElasticsearchResponse(id, source);
         })
         .collect(Collectors.toList());
 
@@ -257,7 +257,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
 
       // Parse the aggregations object from the serialized result
       JsonObject aggs = new JsonObject(result).getJsonObject(AGGREGATIONS);
-      ElasticsearchResponse.setGlobalAggregations(aggs);
+      ElasticsearchResponse.setAggregations(aggs);
     }
 
     return responses;

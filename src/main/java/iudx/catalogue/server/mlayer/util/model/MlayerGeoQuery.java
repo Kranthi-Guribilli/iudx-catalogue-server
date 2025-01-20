@@ -68,7 +68,7 @@ public class MlayerGeoQuery {
             response.stream()
                 .map(elasticResponse -> {
                   JsonObject json = new JsonObject(elasticResponse.getSource().toString());
-                  json.put("doc_id", elasticResponse.getId());
+                  json.put("doc_id", elasticResponse.getDocId());
                   return json;
                 })
                 .forEach(responseMsg::addResult);

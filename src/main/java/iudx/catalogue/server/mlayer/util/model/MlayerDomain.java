@@ -192,7 +192,7 @@ public class MlayerDomain {
             String parameterIdName = source.getString("name").toLowerCase();
             String requestBodyName = request.getString("name").toLowerCase();
             if (parameterIdName.equals(requestBodyName)) {
-              String docId = checkRes.result().get(0).getId();
+              String docId = checkRes.result().get(0).getDocId();
               esService.updateDocument(mlayerDomainIndex, docId, request)
                   .onComplete(putRes -> {
                     if (putRes.succeeded()) {
@@ -250,7 +250,7 @@ public class MlayerDomain {
               return;
             }
 
-            String docId = checkRes.result().get(0).getId();
+            String docId = checkRes.result().get(0).getDocId();
 
             esService.deleteDocument(mlayerDomainIndex, docId)
                 .onComplete(putRes -> {

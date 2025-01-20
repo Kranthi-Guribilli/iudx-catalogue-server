@@ -279,7 +279,7 @@ public class StacServiceImpl implements StacSevice {
                   .map(elasticResponse -> {
                     JsonObject json = new JsonObject();
                     json.put(SOURCE, elasticResponse.getSource());
-                    json.put(DOC_ID, elasticResponse.getId());
+                    json.put(DOC_ID, elasticResponse.getDocId());
                     return json;
                   })
                   .forEach(responseMsg::addResult);

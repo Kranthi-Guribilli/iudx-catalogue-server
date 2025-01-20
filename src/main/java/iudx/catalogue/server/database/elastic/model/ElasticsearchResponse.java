@@ -1,15 +1,13 @@
 package iudx.catalogue.server.database.elastic.model;
 
 import io.vertx.codegen.annotations.DataObject;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @DataObject(generateConverter = true)
 public class ElasticsearchResponse {
-  private String id;
+  private String docId;
   private JsonObject source;
-  private JsonArray aggregations;
-  private static JsonObject globalAggregations;
+  private static JsonObject aggregations;
 
   public ElasticsearchResponse() {
     // Default constructor
@@ -19,18 +17,17 @@ public class ElasticsearchResponse {
     ElasticsearchResponseConverter.fromJson(json, this);
   }
 
-  public ElasticsearchResponse(String id, JsonObject source, JsonArray aggregations) {
-    this.id = id;
+  public ElasticsearchResponse(String docId, JsonObject source) {
+    this.docId = docId;
     this.source = source;
-    this.aggregations = aggregations;
   }
 
-  public static JsonObject getGlobalAggregations() {
-    return globalAggregations;
+  public static JsonObject getAggregations() {
+    return aggregations;
   }
 
-  public static void setGlobalAggregations(JsonObject globalAggregations) {
-    ElasticsearchResponse.globalAggregations = globalAggregations;
+  public static void setAggregations(JsonObject aggregations) {
+    ElasticsearchResponse.aggregations = aggregations;
   }
 
   public JsonObject toJson() {
@@ -39,12 +36,12 @@ public class ElasticsearchResponse {
     return json;
   }
 
-  public String getId() {
-    return id;
+  public String getDocId() {
+    return docId;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setDocId(String docId) {
+    this.docId = docId;
   }
 
   public JsonObject getSource() {
@@ -55,20 +52,11 @@ public class ElasticsearchResponse {
     this.source = source;
   }
 
-  public JsonArray getAggregations() {
-    return aggregations;
-  }
-
-  public void setAggregations(JsonArray aggregations) {
-    this.aggregations = aggregations;
-  }
-
   @Override
   public String toString() {
     return "ElasticsearchResponse{" +
-        "id='" + id + '\'' +
+        "docId='" + docId + '\'' +
         ", source=" + source +
-        ", aggregations=" + aggregations +
         '}';
   }
 }

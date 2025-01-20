@@ -125,7 +125,7 @@ public class MlayerInstance {
                           .getResponse());
               return;
             }
-            String docId = checkRes.result().get(0).getId();
+            String docId = checkRes.result().get(0).getDocId();
 
             esService.deleteDocument(mlayerInstanceIndex, docId)
                 .onComplete(delRes -> {
@@ -239,7 +239,7 @@ public class MlayerInstance {
             String parameterIdName = source.getString("name").toLowerCase();
             String requestBodyName = request.getString("name").toLowerCase();
             if (parameterIdName.equals(requestBodyName)) {
-              String docId = checkRes.result().get(0).getId();
+              String docId = checkRes.result().get(0).getDocId();
               esService.updateDocument(mlayerInstanceIndex, docId, request)
                   .onComplete(putRes -> {
                     if (putRes.succeeded()) {

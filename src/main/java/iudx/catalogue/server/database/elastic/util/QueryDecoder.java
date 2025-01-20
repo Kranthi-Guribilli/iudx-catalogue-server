@@ -429,7 +429,7 @@ public final class QueryDecoder {
               .map(JsonObject.class::cast)
               .map(providerId -> providerId.getString(ID))
               .collect(Collectors.toList());
-      ids.forEach(id -> queryModel.addMustQuery(new QueryModel(QueryType.MATCH,
+      ids.forEach(id -> queryModel.addShouldQuery(new QueryModel(QueryType.MATCH,
           Map.of(FIELD, PROVIDER + KEYWORD_KEY, VALUE, id))));
       queryModel.setMinimumShouldMatch("1");
       return queryModel;
@@ -518,8 +518,10 @@ public final class QueryDecoder {
         termsAggParams.put(FIELD, TAGS + KEYWORD_KEY);
         termsAggParams.put(SIZE_KEY, limit);
 
-        tempQueryModel = new QueryModel(AggregationType.TERMS, termsAggParams);
-        tempQueryModel.setAggregationName(RESULTS);
+        QueryModel aggs = new QueryModel(AggregationType.TERMS, termsAggParams);
+        aggs.setAggregationName(RESULTS);
+        tempQueryModel = new QueryModel();
+        tempQueryModel.setAggregations(List.of(aggs));
       } else {
         QueryModel instanceIdTermQuery = new QueryModel(QueryType.TERM,
             Map.of(FIELD, INSTANCE + KEYWORD_KEY, VALUE, instanceId));
@@ -566,7 +568,6 @@ public final class QueryDecoder {
         tempQueryModel = new QueryModel(queryModel, List.of(aggs));
       }
     }
-
     return tempQueryModel;
   }
 }

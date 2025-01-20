@@ -1,6 +1,6 @@
 package iudx.catalogue.server.mlayer.util.model;
 
-import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getGlobalAggregations;
+import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getAggregations;
 import static iudx.catalogue.server.database.elastic.util.Constants.DESCRIPTION_ATTR;
 import static iudx.catalogue.server.database.elastic.util.Constants.DOC_COUNT;
 import static iudx.catalogue.server.database.elastic.util.Constants.ID_KEYWORD;
@@ -274,8 +274,8 @@ public class MlayerPopularDatasets {
             JsonObject result = new JsonObject();
             JsonArray resourceGroupAndProvider = new JsonArray();
 
-            if (getGlobalAggregations() != null) {
-              int providerCount = getGlobalAggregations().getJsonObject("provider_count")
+            if (getAggregations() != null) {
+              int providerCount = getAggregations().getJsonObject("provider_count")
                   .getInteger(VALUE);
               result.put("providerCount", providerCount);
             }
@@ -521,7 +521,7 @@ public class MlayerPopularDatasets {
               LOGGER.debug("RGs not present");
               datasetResult.handle(Future.failedFuture(NO_CONTENT_AVAILABLE));
             }
-            JsonObject aggregations = getGlobalAggregations();
+            JsonObject aggregations = getAggregations();
             JsonObject aggregationResult = new JsonObject();
             aggregationResult =
                 new JsonObject()

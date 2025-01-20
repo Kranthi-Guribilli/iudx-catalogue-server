@@ -11,6 +11,8 @@ package iudx.catalogue.server.apiserver;
 import static iudx.catalogue.server.apiserver.util.Constants.*;
 import static iudx.catalogue.server.common.util.ResponseUtils.internalErrorResp;
 import static iudx.catalogue.server.database.elastic.util.Constants.KEY;
+import static iudx.catalogue.server.database.elastic.util.Constants.SUMMARY_KEY;
+import static iudx.catalogue.server.database.elastic.util.Constants.WORD_VECTOR_KEY;
 import static iudx.catalogue.server.util.Constants.*;
 
 import io.vertx.core.AsyncResult;
@@ -181,7 +183,7 @@ public final class ListController {
     Promise<JsonObject> promise = Promise.promise();
     QueryModel elasticQuery = queryDecoder.listItemQueryModel(request);
 
-    LOGGER.debug("Info: Listing items;" + elasticQuery);
+    LOGGER.debug("Info: Listing items;" + elasticQuery.toJson());
 
     esService.search(docIndex, elasticQuery).onComplete(dbHandler -> {
           if (dbHandler.succeeded()) {
@@ -192,6 +194,10 @@ public final class ListController {
             responseMsg.setTotalHits(responseList.size());
             responseList.stream()
                 .map(ElasticsearchResponse::getSource)
+                .peek(source -> {
+                  source.remove(SUMMARY_KEY);
+                  source.remove(WORD_VECTOR_KEY);
+                })
                 .forEach(responseMsg::addResult);
             promise.complete(responseMsg.getResponse());
           } else {
@@ -208,7 +214,7 @@ public final class ListController {
 
     QueryModel elasticQuery = queryDecoder.listItemQueryModel(request);
 
-    LOGGER.debug("Info: Listing items;" + elasticQuery);
+    LOGGER.debug("Info: Listing items;" + elasticQuery.toJson());
 
     esService.search(docIndex, elasticQuery).onComplete(dbHandler -> {
           if (dbHandler.succeeded()) {
@@ -220,7 +226,7 @@ public final class ListController {
 
               // Get the global aggregations (already set previously)
               JsonArray globalAggregations =
-                  ElasticsearchResponse.getGlobalAggregations().getJsonObject(RESULTS).getJsonArray(BUCKETS);
+                  ElasticsearchResponse.getAggregations().getJsonObject(RESULTS).getJsonArray(BUCKETS);
 
               // If global aggregations are present, process them once
               if (globalAggregations != null && !globalAggregations.isEmpty()) {

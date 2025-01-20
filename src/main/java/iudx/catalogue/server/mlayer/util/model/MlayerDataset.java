@@ -1,6 +1,6 @@
 package iudx.catalogue.server.mlayer.util.model;
 
-import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getGlobalAggregations;
+import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getAggregations;
 import static iudx.catalogue.server.database.elastic.util.Constants.ACCESS_POLICY;
 import static iudx.catalogue.server.database.elastic.util.Constants.DATA_DESCRIPTOR;
 import static iudx.catalogue.server.database.elastic.util.Constants.DATA_SAMPLE;
@@ -622,7 +622,7 @@ public class MlayerDataset {
               JsonObject resourceItemCount = new JsonObject();
               JsonObject resourceAccessPolicy = new JsonObject();
               JsonArray resultsArray =
-                  getGlobalAggregations().getJsonObject(RESULTS).getJsonArray(BUCKETS);
+                  getAggregations().getJsonObject(RESULTS).getJsonArray(BUCKETS);
               LOGGER.debug("resourceAP for each resultsArray started");
               resultsArray.forEach(
                   record -> {

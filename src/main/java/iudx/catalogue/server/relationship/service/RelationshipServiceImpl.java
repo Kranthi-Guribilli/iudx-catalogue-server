@@ -132,7 +132,8 @@ public class RelationshipServiceImpl implements RelationshipService {
           request.mergeIn(relType);
           QueryModel elasticQuery = new QueryModel();
           elasticQuery.setQueries(queryDecoder.listRelationshipQueryModel(request));
-          LOGGER.debug("Info: Query constructed;" + elasticQuery);
+          elasticQuery.setLimit(MAX_LIMIT);
+          LOGGER.debug("Info: Query constructed;" + elasticQuery.toJson());
           if (elasticQuery.getQueries() != null) {
             handleClientSearchAsync(promise, elasticQuery);
           } else {
@@ -183,10 +184,10 @@ public class RelationshipServiceImpl implements RelationshipService {
         Map.of(FIELD, RESOURCE_SVR + KEYWORD_KEY, VALUE, relType.getString(ID))));
     typeQueryModel4RsGroup.addMustQuery(new QueryModel(QueryType.TERM,
         Map.of(FIELD, TYPE_KEYWORD, VALUE, ITEM_TYPE_PROVIDER)));
-    typeQueryModel4RsGroup.setIncludeFields(List.of(ID));
-    typeQueryModel4RsGroup.setLimit(MAX_LIMIT);
 
     queryModel.setQueries(typeQueryModel4RsGroup);
+    queryModel.setIncludeFields(List.of(ID));
+    queryModel.setLimit(MAX_LIMIT);
 
     LOGGER.debug("INFO: typeQueryModel4RsGroup build");
 

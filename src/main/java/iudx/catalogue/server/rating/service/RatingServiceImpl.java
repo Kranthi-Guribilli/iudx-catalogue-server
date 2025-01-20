@@ -8,7 +8,7 @@ import static iudx.catalogue.server.common.util.ResponseUtils.itemAlreadyExistsR
 import static iudx.catalogue.server.common.util.ResponseUtils.itemNotFoundResponse;
 import static iudx.catalogue.server.common.util.ResponseUtils.ratingSuccessResponse;
 import static iudx.catalogue.server.common.util.ResponseUtils.successResponse;
-import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getGlobalAggregations;
+import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getAggregations;
 import static iudx.catalogue.server.database.elastic.util.AggregationType.AVG;
 import static iudx.catalogue.server.database.elastic.util.Constants.DOC_COUNT;
 import static iudx.catalogue.server.database.elastic.util.Constants.ID_KEYWORD;
@@ -219,7 +219,7 @@ public class RatingServiceImpl implements RatingService {
                         DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
                         responseMsg.statusSuccess().setTotalHits(getRes.result().size());
                         try {
-                          JsonArray globalAggregations = getGlobalAggregations()
+                          JsonArray globalAggregations = getAggregations()
                               .getJsonObject(Constants.RESULTS).getJsonArray(BUCKETS);
                           // Process the global aggregations using streams
                           globalAggregations.stream()
@@ -380,7 +380,7 @@ public class RatingServiceImpl implements RatingService {
               ratingId, UPDATE, "Fail: Doc doesn't exist, can't update"));
           return;
         }
-        String docId = checkRes.result().get(0).getId();
+        String docId = checkRes.result().get(0).getDocId();
         esService.updateDocument(ratingIndex, docId, ratingDoc)
             .onComplete(putRes -> {
               if (putRes.failed()) {
@@ -420,7 +420,7 @@ public class RatingServiceImpl implements RatingService {
               ratingId, DELETE, "Fail: Doc doesn't exist, can't delete"));
           return;
         }
-        String docId = checkRes.result().get(0).getId();
+        String docId = checkRes.result().get(0).getDocId();
         esService.deleteDocument(ratingIndex, docId)
             .onComplete(delRes -> {
               if (delRes.succeeded()) {

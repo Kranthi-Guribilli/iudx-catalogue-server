@@ -169,7 +169,7 @@ public class ItemServiceImpl implements ItemService {
                               "Fail: Doc doesn't exist, can't update"));
                           return;
                         }
-                        String docId = checkRes.result().get(0).getId();
+                        String docId = checkRes.result().get(0).getDocId();
                         esService.updateDocument(index, docId, doc)
                             .onComplete(dbHandler -> {
                               if (dbHandler.failed()) {
@@ -224,7 +224,7 @@ public class ItemServiceImpl implements ItemService {
                               itemNotFoundResponse(id, "Fail: Doc doesn't exist, can't delete"));
                           return;
                         }
-                        String docId = checkRes.result().get(0).getId();
+                        String docId = checkRes.result().get(0).getDocId();
                         esService.deleteDocument(index, docId)
                             .onComplete(dbHandler -> {
                               if (dbHandler.succeeded()) {

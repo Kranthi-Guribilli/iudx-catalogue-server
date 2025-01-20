@@ -1,6 +1,6 @@
 package iudx.catalogue.server.mlayer.util.model;
 
-import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getGlobalAggregations;
+import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getAggregations;
 import static iudx.catalogue.server.database.elastic.util.Constants.DESCRIPTION_ATTR;
 import static iudx.catalogue.server.database.elastic.util.Constants.KEYWORD_KEY;
 import static iudx.catalogue.server.database.elastic.util.Constants.SUMMARY_KEY;
@@ -109,9 +109,9 @@ public class MlayerProvider {
               JsonObject result = new JsonObject();
               JsonArray resourceGroupAndProvider = new JsonArray();
 
-              if (getGlobalAggregations() != null) {
+              if (getAggregations() != null) {
                 int providerCount =
-                    getGlobalAggregations().getJsonObject("provider_count")
+                    getAggregations().getJsonObject("provider_count")
                         .getInteger(VALUE);
                 result.put("providerCount", providerCount);
               }
