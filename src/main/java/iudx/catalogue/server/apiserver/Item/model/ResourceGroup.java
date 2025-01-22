@@ -27,12 +27,16 @@ public class ResourceGroup implements Item {
   private String description;
   @NotEmpty(message = "Type cannot be empty")
   private List<String> tags;
+  private String ownerUserId;
+  private String cos;
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
+  private final JsonObject requestJson;
 
 
   public ResourceGroup(JsonObject json) {
+    this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
     this.type = json.getJsonArray("type", new JsonArray().add("iudx:ResourceGroup")).getList();
@@ -40,6 +44,8 @@ public class ResourceGroup implements Item {
     this.description = json.getString("description");
     this.tags = json.getJsonArray("tags", new JsonArray()).getList();
     this.provider = json.getString("provider");
+    this.ownerUserId = json.getString("ownerUserId");
+    this.cos = json.getString("cos");
     this.itemStatus = json.getString("itemStatus");
     this.itemCreatedAt = json.getString("itemCreatedAt");
     validateFields();
@@ -128,6 +134,25 @@ public class ResourceGroup implements Item {
     this.tags = tags;
   }
 
+  public String getOwnerUserId() {
+    return ownerUserId;
+  }
+
+  public void setOwnerUserId(String ownerUserId) {
+    this.ownerUserId = ownerUserId;
+  }
+
+  public String getCos() {
+    return cos;
+  }
+
+  public void setCos(String cos) {
+    this.cos = cos;
+  }
+  public JsonObject getRequestJson() {
+    return requestJson;
+  }
+
   @Override
   public String getContext() {
     return context;
@@ -175,8 +200,17 @@ public class ResourceGroup implements Item {
     json.put("description", description);
     json.put("tags", new JsonArray(tags));
     json.put("provider", provider);
+    json.put("ownerUserId", ownerUserId);
+    json.put("cos", cos);
     json.put("itemStatus", itemStatus);
     json.put("itemCreatedAt", itemCreatedAt);
+    // Add additional fields from the original JSON request
+    JsonObject requestJson = getRequestJson();
+    for (String key : requestJson.fieldNames()) {
+      if (!json.containsKey(key)) {
+        json.put(key, requestJson.getValue(key));
+      }
+    }
     return json;
   }
 

@@ -34,8 +34,10 @@ public class COS implements Item {
   private String name;
   @NotEmpty(message = "Description cannot be null or empty")
   private String description;
+  private final JsonObject requestJson;
 
   public COS(JsonObject json) {
+    this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
     this.type = json.getJsonArray("type", new JsonArray().add("iudx:COS")).getList();
@@ -192,6 +194,9 @@ public class COS implements Item {
   public void setCosUI(String cosUI) {
     this.cosUI = cosUI;
   }
+  public JsonObject getRequestJson() {
+    return requestJson;
+  }
 
   @Override
   public JsonObject toJson() {
@@ -208,6 +213,13 @@ public class COS implements Item {
     json.put("cosUI", cosUI);
     json.put("itemStatus", itemStatus);
     json.put("itemCreatedAt", itemCreatedAt);
+    // Add additional fields from the original JSON request
+    JsonObject requestJson = getRequestJson();
+    for (String key : requestJson.fieldNames()) {
+      if (!json.containsKey(key)) {
+        json.put(key, requestJson.getValue(key));
+      }
+    }
 
     return json;
   }

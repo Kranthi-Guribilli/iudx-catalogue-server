@@ -33,11 +33,15 @@ public class Resource implements Item {
   private String name;
   @NotEmpty(message = "Description cannot be empty")
   private String description;
+  private String ownerUserId;
+  private String cos;
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
+  private final JsonObject requestJson;
 
   public Resource(JsonObject json) {
+    this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
     this.type = json.getJsonArray("type", new JsonArray()).getList();
@@ -47,6 +51,8 @@ public class Resource implements Item {
     this.provider = json.getString("provider");
     this.resourceGroup = json.getString("resourceGroup");
     this.resourceServer = json.getString("resourceServer");
+    this.ownerUserId = json.getString("ownerUserId");
+    this.cos = json.getString("cos");
     this.apdURL = json.getString("apdURL");
     this.accessPolicy = json.getString("accessPolicy");
     this.itemStatus = json.getString("itemStatus");
@@ -140,6 +146,22 @@ public class Resource implements Item {
     this.tags = tags;
   }
 
+  public String getOwnerUserId() {
+    return ownerUserId;
+  }
+
+  public void setOwnerUserId(String ownerUserId) {
+    this.ownerUserId = ownerUserId;
+  }
+
+  public String getCos() {
+    return cos;
+  }
+
+  public void setCos(String cos) {
+    this.cos = cos;
+  }
+
   @Override
   public String getContext() {
     return context;
@@ -183,9 +205,6 @@ public class Resource implements Item {
   }
 
   public void setResourceGroup(String resourceGroup) {
-    if (resourceGroup == null || !resourceGroup.matches(UUID_REGEX)) {
-      throw new IllegalArgumentException("Invalid resourceGroup format");
-    }
     this.resourceGroup = resourceGroup;
   }
 
@@ -213,6 +232,9 @@ public class Resource implements Item {
   public void setAccessPolicy(String accessPolicy) {
     this.accessPolicy = accessPolicy;
   }
+  public JsonObject getRequestJson() {
+    return requestJson;
+  }
 
   @Override
   public JsonObject toJson() {
@@ -225,13 +247,21 @@ public class Resource implements Item {
     json.put("description", description);
     json.put("tags", new JsonArray(tags));
     json.put("provider", provider);
+    json.put("ownerUserId", ownerUserId);
+    json.put("cos", cos);
     json.put("resourceGroup", resourceGroup);
     json.put("resourceServer", resourceServer);
     json.put("apdURL", apdURL);
     json.put("accessPolicy", accessPolicy);
     json.put("itemStatus", itemStatus);
     json.put("itemCreatedAt", itemCreatedAt);
-
+    // Add additional fields from the original JSON request
+    JsonObject requestJson = getRequestJson();
+    for (String key : requestJson.fieldNames()) {
+      if (!json.containsKey(key)) {
+        json.put(key, requestJson.getValue(key));
+      }
+    }
     return json;
   }
 

@@ -27,8 +27,10 @@ public class Owner implements Item {
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
+  private final JsonObject requestJson;
 
   public Owner(JsonObject json) throws IllegalArgumentException {
+    this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
     this.type = json.getJsonArray("type", new JsonArray().add("iudx:Owner")).getList();
@@ -130,11 +132,15 @@ public class Owner implements Item {
   public void setItemCreatedAt(String itemCreatedAt) {
     this.itemCreatedAt = itemCreatedAt;
   }
+  public JsonObject getRequestJson() {
+    return requestJson;
+  }
 
   @Override
   public JsonObject toJson() {
     JsonObject json = new JsonObject();
 
+    // Set explicitly defined fields
     json.put("@context", context);
     json.put("id", id.toString());
     json.put("type", new JsonArray(type));
@@ -142,6 +148,13 @@ public class Owner implements Item {
     json.put("description", description);
     json.put("itemStatus", getItemStatus());
     json.put("itemCreatedAt", getItemCreatedAt());
+    // Add additional fields from the original JSON request
+    JsonObject requestJson = getRequestJson();
+    for (String key : requestJson.fieldNames()) {
+      if (!json.containsKey(key)) {
+        json.put(key, requestJson.getValue(key));
+      }
+    }
 
     return json;
   }

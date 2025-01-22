@@ -45,9 +45,11 @@ public class ResourceServer implements Item {
   @NotEmpty(message = "Tags cannot be empty")
   private List<String> tags;
   private String context;
+  private final JsonObject requestJson;
 
 
   public ResourceServer(JsonObject json) {
+    this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
     this.type = json.getJsonArray("type", new JsonArray().add("iudx:ResourceServer")).getList();
@@ -266,8 +268,8 @@ public class ResourceServer implements Item {
     this.resourceAccessModalities = new ArrayList<>(resourceAccessModalities);
   }
 
-  public void addResourceAccessModality(ResourceAccessModality resourceAccessModality) {
-    this.resourceAccessModalities.add(resourceAccessModality);
+  public JsonObject getRequestJson() {
+    return requestJson;
   }
 
   public JsonObject toJson() {
@@ -294,6 +296,13 @@ public class ResourceServer implements Item {
       json.put("resourceAccessModalities", new JsonArray(resourceAccessModalities.stream()
           .map(ResourceAccessModality::toJson)
           .collect(Collectors.toList())));
+    }
+    // Add additional fields from the original JSON request
+    JsonObject requestJson = getRequestJson();
+    for (String key : requestJson.fieldNames()) {
+      if (!json.containsKey(key)) {
+        json.put(key, requestJson.getValue(key));
+      }
     }
 
     return json;

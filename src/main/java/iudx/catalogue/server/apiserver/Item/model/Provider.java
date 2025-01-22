@@ -28,11 +28,15 @@ public class Provider implements Item {
   @Pattern(regexp = UUID_REGEX, message = "Invalid owner format")
   private UUID ownerUserId;
   private UUID resourceServer;
+  private String resourceServerRegURL;
+  private String cos;
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
+  private final JsonObject requestJson;
 
   public Provider(JsonObject json) {
+    this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
     this.type = json.getJsonArray("type", new JsonArray().add("iudx:Provider")).getList();
@@ -40,6 +44,8 @@ public class Provider implements Item {
     this.description = json.getString("description");
     this.ownerUserId = UUID.fromString(json.getString("ownerUserId"));
     this.resourceServer = UUID.fromString(json.getString("resourceServer"));
+    this.resourceServerRegURL = json.getString("resourceServerRegURL");
+    this.cos = json.getString("cos");
     this.itemStatus = json.getString("itemStatus");
     this.itemCreatedAt = json.getString("itemCreatedAt");
 
@@ -184,6 +190,25 @@ public class Provider implements Item {
     this.resourceServer = resourceServer;
   }
 
+  public String getResourceServerRegURL() {
+    return resourceServerRegURL;
+  }
+
+  public void setResourceServerRegURL(String resourceServerRegURL) {
+    this.resourceServerRegURL = resourceServerRegURL;
+  }
+
+  public String getCos() {
+    return cos;
+  }
+
+  public void setCos(String cos) {
+    this.cos = cos;
+  }
+  public JsonObject getRequestJson() {
+    return requestJson;
+  }
+
   @Override
   public JsonObject toJson() {
     JsonObject json = new JsonObject();
@@ -195,11 +220,20 @@ public class Provider implements Item {
     json.put("description", description);
     json.put("ownerUserId", ownerUserId.toString());
     json.put("resourceServer", resourceServer.toString());
+    json.put("resourceServerRegURL", resourceServerRegURL);
+    json.put("cos", cos);
     json.put("itemStatus", itemStatus);
     json.put("itemCreatedAt", itemCreatedAt);
 
     if (providerOrg != null) {
       json.put("providerOrg", providerOrg.toJson());
+    }
+    // Add additional fields from the original JSON request
+    JsonObject requestJson = getRequestJson();
+    for (String key : requestJson.fieldNames()) {
+      if (!json.containsKey(key)) {
+        json.put(key, requestJson.getValue(key));
+      }
     }
 
     return json;
