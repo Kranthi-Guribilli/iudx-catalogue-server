@@ -1,42 +1,9 @@
 package iudx.catalogue.server.mlayer.util.model;
 
 import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getAggregations;
-import static iudx.catalogue.server.database.elastic.util.Constants.ACCESS_POLICY;
-import static iudx.catalogue.server.database.elastic.util.Constants.DATA_DESCRIPTOR;
-import static iudx.catalogue.server.database.elastic.util.Constants.DATA_SAMPLE;
-import static iudx.catalogue.server.database.elastic.util.Constants.DESCRIPTION_ATTR;
-import static iudx.catalogue.server.database.elastic.util.Constants.ID_KEYWORD;
-import static iudx.catalogue.server.database.elastic.util.Constants.KEY;
-import static iudx.catalogue.server.database.elastic.util.Constants.LABEL;
-import static iudx.catalogue.server.database.elastic.util.Constants.SIZE_KEY;
-import static iudx.catalogue.server.database.elastic.util.Constants.SUMMARY_KEY;
-import static iudx.catalogue.server.database.elastic.util.Constants.WORD_VECTOR_KEY;
-import static iudx.catalogue.server.util.Constants.BUCKETS;
-import static iudx.catalogue.server.util.Constants.DETAIL_INTERNAL_SERVER_ERROR;
-import static iudx.catalogue.server.util.Constants.FIELD;
-import static iudx.catalogue.server.util.Constants.ICON_BASE64;
-import static iudx.catalogue.server.util.Constants.ID;
-import static iudx.catalogue.server.util.Constants.INSTANCE;
-import static iudx.catalogue.server.util.Constants.ITEM_TYPE_COS;
-import static iudx.catalogue.server.util.Constants.ITEM_TYPE_PROVIDER;
-import static iudx.catalogue.server.util.Constants.ITEM_TYPE_RESOURCE;
-import static iudx.catalogue.server.util.Constants.ITEM_TYPE_RESOURCE_GROUP;
-import static iudx.catalogue.server.util.Constants.LIMIT;
-import static iudx.catalogue.server.util.Constants.MAX_LIMIT;
-import static iudx.catalogue.server.util.Constants.NO_CONTENT_AVAILABLE;
-import static iudx.catalogue.server.util.Constants.OFFSET;
-import static iudx.catalogue.server.util.Constants.PROVIDER;
-import static iudx.catalogue.server.util.Constants.PROVIDER_DES;
-import static iudx.catalogue.server.util.Constants.RESULTS;
-import static iudx.catalogue.server.util.Constants.SUCCESS;
-import static iudx.catalogue.server.util.Constants.TITLE_INTERNAL_SERVER_ERROR;
-import static iudx.catalogue.server.util.Constants.TITLE_ITEM_NOT_FOUND;
-import static iudx.catalogue.server.util.Constants.TOTAL_HITS;
-import static iudx.catalogue.server.util.Constants.TYPE;
-import static iudx.catalogue.server.util.Constants.TYPE_INTERNAL_SERVER_ERROR;
-import static iudx.catalogue.server.util.Constants.TYPE_ITEM_NOT_FOUND;
-import static iudx.catalogue.server.util.Constants.TYPE_SUCCESS;
-import static iudx.catalogue.server.util.Constants.VALUE;
+import static iudx.catalogue.server.database.elastic.util.Constants.*;
+import static iudx.catalogue.server.util.Constants.*;
+import static iudx.catalogue.server.validator.util.Constants.CONTEXT;
 import static iudx.catalogue.server.validator.util.Constants.VALIDATION_FAILURE_MSG;
 
 import io.vertx.core.Future;
@@ -168,7 +135,7 @@ public class MlayerDataset {
                             .put(DESCRIPTION_ATTR, record.getString(DESCRIPTION_ATTR));
                         if (record.getJsonArray(Constants.TYPE).size() > 1) {
                           String schema =
-                              record.getString("@context")
+                              record.getString(CONTEXT)
                                   + record
                                   .getJsonArray(Constants.TYPE)
                                   .getString(1)
@@ -211,7 +178,7 @@ public class MlayerDataset {
                         }
                       }
 
-                      if (itemType.equals("iudx:COS")) {
+                      if (itemType.equals(ITEM_TYPE_COS)) {
                         dataset.put("cosURL", record.getString("cosURL"));
                       }
                     }
@@ -502,8 +469,7 @@ public class MlayerDataset {
               int size = resultHandler.result().size();
               if (size == 0) {
                 LOGGER.debug("getRGs is zero");
-                datasetResult.handle(
-                    Future.failedFuture(NO_CONTENT_AVAILABLE));
+                datasetResult.fail(NO_CONTENT_AVAILABLE);
                 return;
               }
               JsonObject rsUrl = new JsonObject();
@@ -514,7 +480,8 @@ public class MlayerDataset {
                 JsonObject record = resultHandler.result().get(i).getSource();
                 String itemType = Util.getItemType(record);
                 if (itemType.equals(VALIDATION_FAILURE_MSG)) {
-                  datasetResult.handle(Future.failedFuture(VALIDATION_FAILURE_MSG));
+                  datasetResult.fail(VALIDATION_FAILURE_MSG);
+                  return;
                 }
                 if (itemType.equals(ITEM_TYPE_PROVIDER)) {
                   JsonObject newJson = new JsonObject().put(PROVIDER_DES,
@@ -571,7 +538,7 @@ public class MlayerDataset {
             }
           } else {
             LOGGER.error("Fail: failed DB request");
-            datasetResult.handle(Future.failedFuture(internalErrorResp));
+            datasetResult.fail(internalErrorResp);
           }
         });
   }
@@ -605,7 +572,7 @@ public class MlayerDataset {
           } else {
 
             LOGGER.error("Fail: query fail;" + instanceRes.cause());
-            instanceResult.handle(Future.failedFuture(internalErrorResp));
+            instanceResult.fail(internalErrorResp);
           }
         });
   }
@@ -618,11 +585,17 @@ public class MlayerDataset {
         .onComplete(resourceCountRes -> {
           if (resourceCountRes.succeeded()) {
             try {
+              JsonArray resultsArray =
+                  getAggregations().getJsonObject(RESULTS).getJsonArray(BUCKETS);
+
+              if (resultsArray.isEmpty()) {
+                LOGGER.debug("No Resources With AccessPolicy Found");
+                resourceCountResult.fail(NO_CONTENT_AVAILABLE);
+                return;
+              }
               LOGGER.debug("resourceAP started");
               JsonObject resourceItemCount = new JsonObject();
               JsonObject resourceAccessPolicy = new JsonObject();
-              JsonArray resultsArray =
-                  getAggregations().getJsonObject(RESULTS).getJsonArray(BUCKETS);
               LOGGER.debug("resourceAP for each resultsArray started");
               resultsArray.forEach(
                   record -> {
@@ -663,7 +636,7 @@ public class MlayerDataset {
             }
           } else {
             LOGGER.error("Fail: query fail;" + resourceCountRes.cause());
-            resourceCountResult.handle(Future.failedFuture(internalErrorResp));
+            resourceCountResult.fail(internalErrorResp);
           }
         });
   }

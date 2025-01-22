@@ -20,13 +20,8 @@ import iudx.catalogue.server.database.elastic.util.QueryType;
 import iudx.catalogue.server.database.util.Summarizer;
 import iudx.catalogue.server.geocoding.service.GeocodingService;
 import iudx.catalogue.server.nlpsearch.service.NLPSearchService;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,16 +48,6 @@ public class ItemServiceImpl implements ItemService {
   public ItemServiceImpl(ElasticsearchService esService, JsonObject config) {
     this.esService = esService;
     this.config = config;
-  }
-
-  private static QueryModel getQueryModel(String id, String type) {
-
-    QueryModel idTermQuery = new QueryModel(QueryType.TERM, Map.of(FIELD, ID_KEYWORD, VALUE, id));
-
-    QueryModel typeMatchQuery =
-        new QueryModel(QueryType.MATCH, Map.of(FIELD, TYPE_KEYWORD, VALUE, type));
-
-    return new QueryModel(MUST, List.of(idTermQuery, typeMatchQuery));
   }
 
   private static QueryModel checkQueryModel(String id) {
@@ -92,7 +77,10 @@ public class ItemServiceImpl implements ItemService {
     Promise<JsonObject> promise = Promise.promise();
 
     JsonObject doc = item.toJson();
-    doc.put(CONTEXT, config.getString(CONTEXT));
+    String itemType = doc.getJsonArray(TYPE).getString(0);
+    if (!Objects.equals(itemType, ITEM_TYPE_INSTANCE)){
+      doc.put(CONTEXT, config.getString(CONTEXT));
+    }
     String id = doc.getString(ID);
     if (id == null) {
       LOGGER.error("Fail: id not present in the request");
@@ -146,7 +134,12 @@ public class ItemServiceImpl implements ItemService {
     String index = config.getString(DOC_INDEX);
 
     QueryModel queryModel = new QueryModel();
-    queryModel.setQueries(getQueryModel(id, type));
+    QueryModel idTermQuery = new QueryModel(QueryType.TERM, Map.of(FIELD, ID_KEYWORD, VALUE, id));
+    QueryModel typeMatchQuery =
+        new QueryModel(QueryType.MATCH, Map.of(FIELD, TYPE_KEYWORD, VALUE, type));
+    QueryModel checkItemExistenceQuery = new QueryModel(MUST, List.of(idTermQuery, typeMatchQuery));
+    queryModel.setQueries(checkItemExistenceQuery);
+
     // Set the source configuration to include specified fields
     queryModel.setIncludeFields(List.of(ID));
     new Timer()
@@ -258,16 +251,20 @@ public class ItemServiceImpl implements ItemService {
 
     String index = config.getString(DOC_INDEX);
     String id = requestBody.getString(ID);
-    List<String> includeFields = Optional.ofNullable(requestBody.getValue(INCLUDE_FIELDS))
-        .filter(value -> value instanceof List)
-        .map(value -> (List<String>) value)
-        .orElse(null);
+    List<String> includeFields = null;
+    if (requestBody.containsKey(INCLUDE_FIELDS)) {
+      includeFields = requestBody.getJsonArray(INCLUDE_FIELDS).stream()
+         .map(Object::toString)
+         .collect(Collectors.toList());
+    }
     Map<String, Object> termParams = new HashMap<>();
     termParams.put(FIELD, ID_KEYWORD); // Field to match
     termParams.put(VALUE, id);          // The ID value to search for
     QueryModel queryModel = new QueryModel();
     queryModel.setQueries(new QueryModel(QueryType.TERM, termParams));
-    queryModel.setIncludeFields(includeFields);
+    if (includeFields != null) {
+      queryModel.setIncludeFields(includeFields);
+    }
     queryModel.setLimit(MAX_LIMIT);
     queryModel.setOffset(FILTER_PAGINATION_FROM);
 

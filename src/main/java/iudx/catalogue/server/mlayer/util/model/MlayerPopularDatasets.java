@@ -1,32 +1,9 @@
 package iudx.catalogue.server.mlayer.util.model;
 
 import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getAggregations;
-import static iudx.catalogue.server.database.elastic.util.Constants.DESCRIPTION_ATTR;
-import static iudx.catalogue.server.database.elastic.util.Constants.DOC_COUNT;
-import static iudx.catalogue.server.database.elastic.util.Constants.ID_KEYWORD;
-import static iudx.catalogue.server.database.elastic.util.Constants.KEYWORD_KEY;
-import static iudx.catalogue.server.database.elastic.util.Constants.SIZE_KEY;
-import static iudx.catalogue.server.database.elastic.util.Constants.SUMMARY_KEY;
-import static iudx.catalogue.server.database.elastic.util.Constants.WORD_VECTOR_KEY;
-import static iudx.catalogue.server.util.Constants.DETAIL_INTERNAL_SERVER_ERROR;
-import static iudx.catalogue.server.util.Constants.FIELD;
-import static iudx.catalogue.server.util.Constants.ID;
-import static iudx.catalogue.server.util.Constants.INSTANCE;
-import static iudx.catalogue.server.util.Constants.ITEM_TYPE_PROVIDER;
-import static iudx.catalogue.server.util.Constants.ITEM_TYPE_RESOURCE_GROUP;
-import static iudx.catalogue.server.util.Constants.MAX_LIMIT;
-import static iudx.catalogue.server.util.Constants.NO_CONTENT_AVAILABLE;
-import static iudx.catalogue.server.util.Constants.POPULAR_DATASET_COUNT;
-import static iudx.catalogue.server.util.Constants.PROVIDER;
-import static iudx.catalogue.server.util.Constants.PROVIDER_COUNT;
-import static iudx.catalogue.server.util.Constants.RESOURCE_COUNT;
-import static iudx.catalogue.server.util.Constants.RESOURCE_GROUP_COUNT;
-import static iudx.catalogue.server.util.Constants.RESULTS;
-import static iudx.catalogue.server.util.Constants.SUCCESS;
-import static iudx.catalogue.server.util.Constants.TITLE_INTERNAL_SERVER_ERROR;
-import static iudx.catalogue.server.util.Constants.TYPE_INTERNAL_SERVER_ERROR;
-import static iudx.catalogue.server.util.Constants.TYPE_SUCCESS;
-import static iudx.catalogue.server.util.Constants.VALUE;
+import static iudx.catalogue.server.database.elastic.util.Constants.*;
+import static iudx.catalogue.server.util.Constants.*;
+import static iudx.catalogue.server.util.Constants.KEYWORD_KEY;
 import static iudx.catalogue.server.validator.util.Constants.VALIDATION_FAILURE_MSG;
 
 import io.vertx.core.Future;
@@ -56,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 public class MlayerPopularDatasets {
   private static final Logger LOGGER = LogManager.getLogger(MlayerPopularDatasets.class);
-  private static String internalErrorResp =
+  private static final String internalErrorResp =
       new RespBuilder()
           .withType(TYPE_INTERNAL_SERVER_ERROR)
           .withTitle(TITLE_INTERNAL_SERVER_ERROR)
@@ -637,7 +614,7 @@ public class MlayerPopularDatasets {
                     }
                     // Base Query: Terms Query
                     QueryModel termsQueryModel = new QueryModel(QueryType.TERMS, Map.of(FIELD,
-                        "resourceGroup.keyword", VALUE, allRgId.toString()));
+                        "resourceGroup.keyword", VALUE, allRgId));
 
                     // Aggregation: accessPolicy_count
                     QueryModel accessPolicyCountAgg = new QueryModel(AggregationType.VALUE_COUNT,
@@ -646,27 +623,25 @@ public class MlayerPopularDatasets {
                     // Aggregation: access_policies
                     QueryModel accessPoliciesAgg = new QueryModel(AggregationType.TERMS,
                         Map.of(FIELD, "accessPolicy.keyword", SIZE_KEY, 10000));
-                    accessPoliciesAgg.setAggregationName("access_policies");
                     accessPoliciesAgg.setAggregationsMap(
                         Map.of("accessPolicy_count", accessPolicyCountAgg));
 
                     // Aggregation: resource_count
                     QueryModel resourceCountAgg = new QueryModel(AggregationType.VALUE_COUNT,
                         Map.of(FIELD, "id.keyword"));
-                    resourceCountAgg.setAggregationName("resource_count");
 
                     // Aggregation: results
                     QueryModel resultsAgg = new QueryModel(AggregationType.TERMS,
                         Map.of(FIELD, "resourceGroup.keyword", SIZE_KEY, 10000));
                     resultsAgg.setAggregationName("results");
+                    resultsAgg.setAggregationsMap(Map.of("access_policies", accessPoliciesAgg,
+                        "resource_count", resourceCountAgg));
 
                     // Final QueryModel
                     QueryModel getCategorizedResourceAP = new QueryModel();
                     getCategorizedResourceAP.setQueries(termsQueryModel);
-                    getCategorizedResourceAP.setAggregations(List.of(resultsAgg,
-                        accessPoliciesAgg, resourceCountAgg));
+                    getCategorizedResourceAP.setAggregations(List.of(resultsAgg));
                     getCategorizedResourceAP.setLimit("0");
-
 
                     Promise<JsonObject> resourceCount = Promise.promise();
                     MlayerDataset mlayerDataset =
@@ -762,7 +737,7 @@ public class MlayerPopularDatasets {
     queryModel.setAggregationName("resourceGroupCount");
 
     // Set parameters for the filter (filter by type.keyword = "iudx:ResourceGroup")
-    Map<String, Object> filterParams = Map.of("field", "type.keyword", "value", "iudx:ResourceGroup");
+    Map<String, Object> filterParams = Map.of(FIELD, "type.keyword", VALUE, ITEM_TYPE_RESOURCE_GROUP);
     queryModel.setAggregationParameters(filterParams);
 
     // Step 2: Create sub-aggregations for resourceCount and providerCount
@@ -776,8 +751,8 @@ public class MlayerPopularDatasets {
     QueryModel resourceFilter = new QueryModel();
     resourceFilter.setAggregationType(AggregationType.FILTER);
     Map<String, Object> resourceFilterParams = new HashMap<>();
-    resourceFilterParams.put("field", "type.keyword");
-    resourceFilterParams.put("value", "iudx:Resource");
+    resourceFilterParams.put(FIELD, "type.keyword");
+    resourceFilterParams.put(VALUE, "iudx:Resource");
     resourceFilter.setAggregationParameters(resourceFilterParams);
     resourceSubAggregations.put("Resources", resourceFilter);
     resourceCountQuery.setAggregationsMap(resourceSubAggregations);
@@ -791,8 +766,8 @@ public class MlayerPopularDatasets {
     QueryModel providerFilter = new QueryModel();
     providerFilter.setAggregationType(AggregationType.FILTER);
     Map<String, Object> providerFilterParams = new HashMap<>();
-    providerFilterParams.put("field", "type.keyword");
-    providerFilterParams.put("value", "iudx:Provider");
+    providerFilterParams.put(FIELD, "type.keyword");
+    providerFilterParams.put(VALUE, ITEM_TYPE_PROVIDER);
     providerFilter.setAggregationParameters(providerFilterParams);
     providerSubAggregations.put("Providers", providerFilter);
     providerCountQuery.setAggregationsMap(providerSubAggregations);

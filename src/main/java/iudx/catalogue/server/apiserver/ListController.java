@@ -178,8 +178,7 @@ public final class ListController {
     }
   }
 
-  public Future<JsonObject> listOwnerOrCos(
-      JsonObject request) {
+  public Future<JsonObject> listOwnerOrCos(JsonObject request) {
     Promise<JsonObject> promise = Promise.promise();
     QueryModel elasticQuery = queryDecoder.listItemQueryModel(request);
 
@@ -223,15 +222,13 @@ public final class ListController {
             try {
               // Process the aggregation results
               JsonArray results = new JsonArray();
-
-              // Get the global aggregations (already set previously)
-              JsonArray globalAggregations =
+              JsonArray aggregations =
                   ElasticsearchResponse.getAggregations().getJsonObject(RESULTS).getJsonArray(BUCKETS);
 
-              // If global aggregations are present, process them once
-              if (globalAggregations != null && !globalAggregations.isEmpty()) {
-                // Add the global aggregations to the results
-                globalAggregations.stream()
+              // If aggregations are present, process them once
+              if (aggregations != null && !aggregations.isEmpty()) {
+                // Add the aggregations to the results
+                aggregations.stream()
                     .filter(bucket -> bucket instanceof JsonObject)
                     .map(bucket -> ((JsonObject) bucket).getString(KEY))
                     .filter(Objects::nonNull) // Filter out null keys

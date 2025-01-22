@@ -13,6 +13,7 @@ import static iudx.catalogue.server.auditing.util.Constants.EPOCH_TIME;
 import static iudx.catalogue.server.auditing.util.Constants.IUDX_ID;
 import static iudx.catalogue.server.auditing.util.Constants.USER_ID;
 import static iudx.catalogue.server.util.Constants.DETAIL_INVALID_SCHEMA;
+import static iudx.catalogue.server.util.Constants.DOC_INDEX;
 import static iudx.catalogue.server.util.Constants.HTTP_METHOD;
 import static iudx.catalogue.server.util.Constants.ID;
 import static iudx.catalogue.server.util.Constants.REQUEST_DELETE;
@@ -83,7 +84,7 @@ public class StacController {
     this.esService = esService;
     this.authHandler = authHandler;
     this.failureHandler = failureHandler;
-    stackSevice = new StacServiceImpl(esService, config.getString("docIndex"));
+    stackSevice = new StacServiceImpl(esService, config.getString(DOC_INDEX));
   }
 
   Router init() {

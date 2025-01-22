@@ -44,7 +44,7 @@ ResponseUtils {
   }
 
   public static String itemNotFoundResponse(String id, String detail) {
-    return createResponseBuilder(TYPE_ITEM_NOT_FOUND, TITLE_ITEM_NOT_FOUND, detail)
+    return createResponseBuilder(TYPE_ITEM_NOT_FOUND, TITLE_ITEM_NOT_FOUND)
         .withResult(id, detail)
         .getResponse();
   }
@@ -90,13 +90,13 @@ ResponseUtils {
   }
 
   public static JsonObject successResponse(JsonArray result) {
-    return createResponseBuilder(TYPE_SUCCESS, TITLE_SUCCESS, "")
+    return createResponseBuilder(TYPE_SUCCESS, TITLE_SUCCESS)
         .withResult(result)
         .getJsonResponse();
   }
 
   public static JsonObject successResponse(String id) {
-    return createResponseBuilder(TYPE_SUCCESS, TITLE_SUCCESS, "")
+    return createResponseBuilder(TYPE_SUCCESS, TITLE_SUCCESS)
         .withResult(id, INSERT, TYPE_SUCCESS)
         .getJsonResponse();
   }

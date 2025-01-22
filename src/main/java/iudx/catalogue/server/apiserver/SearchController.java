@@ -37,17 +37,13 @@ import iudx.catalogue.server.database.elastic.util.QueryType;
 import iudx.catalogue.server.exceptions.FailureHandler;
 import iudx.catalogue.server.geocoding.service.GeocodingService;
 import iudx.catalogue.server.nlpsearch.service.NLPSearchService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
 public final class SearchController {
-
-
   private static final Logger LOGGER = LogManager.getLogger(SearchController.class);
   private final QueryDecoder queryDecoder = new QueryDecoder();
   private final Router router;

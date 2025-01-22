@@ -15,7 +15,6 @@ import iudx.catalogue.server.common.RespBuilder;
 import iudx.catalogue.server.database.elastic.model.ElasticsearchResponse;
 import iudx.catalogue.server.database.elastic.model.QueryModel;
 import iudx.catalogue.server.database.elastic.service.ElasticsearchService;
-import iudx.catalogue.server.database.elastic.util.Constants;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,14 +23,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class StacServiceImpl implements StacSevice {
-
   private static final Logger LOGGER = LogManager.getLogger(StacServiceImpl.class);
 
   private final ElasticsearchService esService;
   private final String index;
   RespBuilder respBuilder;
   Supplier<String> idSuppler = () -> UUID.randomUUID().toString();
-  private QueryBuilder queryBuilder = new QueryBuilder();
+  private final QueryBuilder queryBuilder = new QueryBuilder();
 
   public StacServiceImpl(ElasticsearchService esService, String index) {
     this.esService = esService;
@@ -329,9 +327,10 @@ public class StacServiceImpl implements StacSevice {
     LOGGER.debug("docId: {}", docId);
     request.remove("id");
     String query = queryBuilder.getPatchQuery(request);
+    JsonObject doc = new JsonObject(query);
     LOGGER.debug("patchQuery:: " + query);
     Promise<JsonObject> promise = Promise.promise();
-    esService.patchDocument(index, docId, JsonObject.mapFrom(query))
+    esService.patchDocument(index, docId, doc)
         .onComplete(patchHandler -> {
           if (patchHandler.succeeded()) {
 
