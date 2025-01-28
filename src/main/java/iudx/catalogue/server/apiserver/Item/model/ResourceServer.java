@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class ResourceServer implements Item {
 
-  private static final String UUID_PATTERN =
+  private static final String UUID_REGEX =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
   private static final String NAME_PATTERN = "^[a-zA-Z0-9]([\\w-. ]*[a-zA-Z0-9 ])?$";
   private static final String REG_URL_PATTERN = "^[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-]{2,}){1,10}$";
@@ -38,8 +38,8 @@ public class ResourceServer implements Item {
     this.name = json.getString("name");
     this.description = json.getString("description");
     this.tags = json.getJsonArray("tags").getList();
-    this.cos = UUID.fromString(json.getString("cos"));
-    this.owner = UUID.fromString(json.getString("owner"));
+    this.cos = parseUUID(json.getString("cos"), "cos");
+    this.owner = parseUUID(json.getString("owner"), "owner");
     this.itemStatus = json.getString("itemStatus");
     this.itemCreatedAt = json.getString("itemCreatedAt");
     this.resourceServerRegURL = json.getString("resourceServerRegURL");
@@ -67,10 +67,10 @@ public class ResourceServer implements Item {
   }
 
   private void validateFields() {
-    if (!id.toString().matches(UUID_PATTERN)) {
+    if (!id.toString().matches(UUID_REGEX)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
-          UUID_PATTERN, id
+          UUID_REGEX, id
       ));
     }
     if (name == null) {
@@ -88,19 +88,19 @@ public class ResourceServer implements Item {
     if (cos == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"cos\"])])");
     }
-    if (!cos.toString().matches(UUID_PATTERN)) {
+    if (!cos.toString().matches(UUID_REGEX)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
-          UUID_PATTERN, cos
+          UUID_REGEX, cos
       ));
     }
     if (owner == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"owner\"])])");
     }
-    if (!owner.toString().matches(UUID_PATTERN)) {
+    if (!owner.toString().matches(UUID_REGEX)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
-          UUID_PATTERN, owner
+          UUID_REGEX, owner
       ));
     }
     if (resourceServerRegURL == null) {
@@ -120,6 +120,21 @@ public class ResourceServer implements Item {
     }
     if (resourceAccessModalities == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"resourceAccessModalities\"])])");
+    }
+  }
+
+  // Utility method to parse and validate UUIDs
+  private UUID parseUUID(String value, String fieldName) {
+    if (value == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"" + fieldName + "\"])])");
+    }
+    try {
+      return UUID.fromString(value);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_REGEX, value
+      ));
     }
   }
 

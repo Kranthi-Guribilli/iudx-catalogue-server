@@ -30,7 +30,7 @@ public class COS implements Item {
     this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
-    this.owner = UUID.fromString(json.getString("owner"));
+    this.owner = parseUUID(json.getString("owner"), "owner");
     this.cosURL = json.getString("cosURL");
     this.cosUI = json.getString("cosUI");
     this.itemStatus = json.getString("itemStatus");
@@ -80,10 +80,19 @@ public class COS implements Item {
     if (cosUI == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"cosUI\"])]");
     }
-    if (!cosUI.matches(COS_UI_REGEX)) {
+  }
+
+  // Utility method to parse and validate UUIDs
+  private UUID parseUUID(String value, String fieldName) {
+    if (value == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"" + fieldName + "\"])])");
+    }
+    try {
+      return UUID.fromString(value);
+    } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
-          COS_UI_REGEX, cosUI
+          UUID_REGEX, value
       ));
     }
   }

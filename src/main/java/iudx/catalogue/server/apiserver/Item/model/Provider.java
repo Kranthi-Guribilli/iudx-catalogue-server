@@ -2,6 +2,7 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +19,7 @@ public class Provider implements Item {
   private String description;
   private ProviderOrg providerOrg;
   private UUID ownerUserId;
+  @NotEmpty
   private UUID resourceServer;
   private String resourceServerRegURL;
   private String cos;
@@ -32,8 +34,8 @@ public class Provider implements Item {
     this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
-    this.ownerUserId = UUID.fromString(json.getString("ownerUserId"));
-    this.resourceServer = UUID.fromString(json.getString("resourceServer"));
+    this.ownerUserId = parseUUID(json.getString("ownerUserId"), "ownerUserId");
+    this.resourceServer = parseUUID(json.getString("resourceServer"), "resourceServer");
     this.resourceServerRegURL = json.getString("resourceServerRegURL");
     this.cos = json.getString("cos");
     this.itemStatus = json.getString("itemStatus");
@@ -86,6 +88,21 @@ public class Provider implements Item {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           UUID_REGEX, resourceServer
+      ));
+    }
+  }
+
+  // Utility method to parse and validate UUIDs
+  private UUID parseUUID(String value, String fieldName) {
+    if (value == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"" + fieldName + "\"])])");
+    }
+    try {
+      return UUID.fromString(value);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_REGEX, value
       ));
     }
   }

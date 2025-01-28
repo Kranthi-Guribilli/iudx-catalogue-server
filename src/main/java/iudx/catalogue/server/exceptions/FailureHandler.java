@@ -45,11 +45,12 @@ public class FailureHandler implements Handler<RoutingContext> {
       return;
     }
 
-    if (failure instanceof DecodeException
-        || failure instanceof IllegalArgumentException
-        || failure instanceof NullPointerException) {
+    if (failure instanceof DecodeException) {
       handleDecodeException(routingContext);
       return;
+    } else if (failure instanceof IllegalArgumentException
+        || failure instanceof NullPointerException) {
+      handleIllegalArgumentException(routingContext);
     } else if (failure instanceof ClassCastException) {
       handleClassCastException(routingContext);
       return;
@@ -62,7 +63,8 @@ public class FailureHandler implements Handler<RoutingContext> {
           new RespBuilder()
               .withType(exception.getUrn().getUrn())
               .withTitle(exception.getUrn().getMessage())
-              .withDetail(exception.getMessage()).getJsonResponse();
+              .withDetail(exception.getMessage())
+              .getJsonResponse();
 
       routingContext
           .response()
@@ -74,11 +76,12 @@ public class FailureHandler implements Handler<RoutingContext> {
         || failure instanceof RequestPredicateException
         || failure instanceof ParameterProcessorException) {
       String type = ResponseUrn.BAD_REQUEST_URN.getUrn();
-      JsonObject response = new RespBuilder()
-          .withDetail("Missing or malformed request")
-          .withType(type)
-          .withTitle(HttpStatusCode.BAD_REQUEST.getDescription())
-          .getJsonResponse();
+      JsonObject response =
+          new RespBuilder()
+              .withDetail("Missing or malformed request")
+              .withType(type)
+              .withTitle(HttpStatusCode.BAD_REQUEST.getDescription())
+              .getJsonResponse();
       routingContext
           .response()
           .putHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -91,15 +94,31 @@ public class FailureHandler implements Handler<RoutingContext> {
           .setStatusCode(HttpStatus.SC_BAD_REQUEST)
           .end(validationFailureResponse(BAD_REQUEST).toString());
     } else {
-      routingContext.response()
+      routingContext
+          .response()
           .setStatusCode(400)
           .putHeader(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
-          .end(new RespBuilder()
-              .withType(TYPE_INVALID_SYNTAX)
-              .withTitle(TITLE_INVALID_SYNTAX)
-              .getResponse());
+          .end(
+              new RespBuilder()
+                  .withType(TYPE_INVALID_SYNTAX)
+                  .withTitle(TITLE_INVALID_SYNTAX)
+                  .getResponse());
     }
+  }
 
+  private void handleIllegalArgumentException(RoutingContext routingContext) {
+    LOGGER.error("Error: Invalid Schema; " + routingContext.failure().getLocalizedMessage());
+    routingContext
+        .response()
+        .setStatusCode(400)
+        .putHeader(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
+        .end(
+            new RespBuilder()
+                .withType(TYPE_INVALID_SCHEMA)
+                .withTitle(TITLE_INVALID_SCHEMA)
+                .withDetail(TITLE_INVALID_SCHEMA)
+                .withResult(new JsonArray().add(routingContext.failure().getLocalizedMessage()))
+                .getResponse());
   }
 
   private JsonObject validationFailureResponse(String message) {
@@ -122,12 +141,12 @@ public class FailureHandler implements Handler<RoutingContext> {
         .response()
         .setStatusCode(400)
         .putHeader(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
-        .end(new RespBuilder()
-            .withType(TYPE_INVALID_SCHEMA)
-            .withTitle(TITLE_INVALID_SCHEMA)
-            .withDetail(TITLE_INVALID_SCHEMA)
-            .withResult(new JsonArray().add(routingContext.failure().getLocalizedMessage()))
-            .getResponse());
+        .end(
+            new RespBuilder()
+                .withType(TYPE_INVALID_SCHEMA)
+                .withTitle(TITLE_INVALID_SCHEMA)
+                .withDetail("Invalid Json payload")
+                .getResponse());
   }
 
   /**
@@ -137,19 +156,15 @@ public class FailureHandler implements Handler<RoutingContext> {
    */
   public void handleClassCastException(RoutingContext routingContext) {
 
-    LOGGER.error("Error: Invalid request payload; "
-        + routingContext.failure().getLocalizedMessage());
+    LOGGER.error(
+        "Error: Invalid request payload; " + routingContext.failure().getLocalizedMessage());
 
-    routingContext.response()
+    routingContext
+        .response()
         .setStatusCode(400)
         .putHeader(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON)
-        .end(
-            new JsonObject()
-                .put(TYPE, TYPE_FAIL)
-                .put(TITLE, "Invalid payload")
-                .encode());
+        .end(new JsonObject().put(TYPE, TYPE_FAIL).put(TITLE, "Invalid payload").encode());
 
     routingContext.next();
   }
 }
-

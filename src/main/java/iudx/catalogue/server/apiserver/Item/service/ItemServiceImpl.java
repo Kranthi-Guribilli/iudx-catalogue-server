@@ -279,7 +279,7 @@ public class ItemServiceImpl implements ItemService {
               promise.fail(new RespBuilder()
                   .withType(TYPE_ITEM_NOT_FOUND)
                   .withTitle(TITLE_ITEM_NOT_FOUND)
-                  .withDetail(DETAIL_ITEM_NOT_FOUND)
+                  .withDetail("Fail: Doc doesn't exist, can't perform operation")
                   .getResponse());
             } else {
               DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
