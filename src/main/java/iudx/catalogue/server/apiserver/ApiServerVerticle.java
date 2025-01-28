@@ -18,20 +18,21 @@ import iudx.catalogue.server.apiserver.Item.service.ItemService;
 import iudx.catalogue.server.apiserver.Item.service.ItemServiceImpl;
 import iudx.catalogue.server.apiserver.crud.CrudController;
 import iudx.catalogue.server.apiserver.crud.CrudService;
+import iudx.catalogue.server.apiserver.stack.controller.StacController;
 import iudx.catalogue.server.auditing.service.AuditingService;
-import iudx.catalogue.server.authenticator.handler.AuthHandler;
-import iudx.catalogue.server.authenticator.handler.ValidateAccessHandler;
+import iudx.catalogue.server.authenticator.handler.AuthenticationHandler;
+import iudx.catalogue.server.authenticator.handler.AuthorizationHandler;
 import iudx.catalogue.server.authenticator.service.AuthenticationService;
 import iudx.catalogue.server.database.elastic.service.ElasticsearchService;
 import iudx.catalogue.server.exceptions.FailureHandler;
-import iudx.catalogue.server.geocoding.GeocodingController;
+import iudx.catalogue.server.geocoding.controller.GeocodingController;
 import iudx.catalogue.server.geocoding.service.GeocodingService;
-import iudx.catalogue.server.mlayer.MlayerController;
+import iudx.catalogue.server.mlayer.controller.MlayerController;
 import iudx.catalogue.server.mlayer.service.MlayerService;
 import iudx.catalogue.server.nlpsearch.service.NLPSearchService;
 import iudx.catalogue.server.rating.controller.RatingController;
 import iudx.catalogue.server.rating.service.RatingService;
-import iudx.catalogue.server.relationship.RelationshipController;
+import iudx.catalogue.server.relationship.controller.RelationshipController;
 import iudx.catalogue.server.relationship.service.RelationshipService;
 import iudx.catalogue.server.relationship.service.RelationshipServiceImpl;
 import iudx.catalogue.server.util.Api;
@@ -60,8 +61,8 @@ import org.apache.logging.log4j.Logger;
 public class ApiServerVerticle extends AbstractVerticle {
 
   private static final Logger LOGGER = LogManager.getLogger(ApiServerVerticle.class);
-  private AuthHandler authHandler;
-  private ValidateAccessHandler validateAccessHandler;
+  private AuthenticationHandler authenticationHandler;
+  private AuthorizationHandler authorizationHandler;
   private CrudController crudController;
   private ListController listController;
   private RatingController ratingController;
@@ -128,8 +129,8 @@ public class ApiServerVerticle extends AbstractVerticle {
 
     AuthenticationService authService = AuthenticationService.createProxy(vertx, AUTH_SERVICE_ADDRESS);
 
-    authHandler = new AuthHandler(authService);
-    validateAccessHandler = new ValidateAccessHandler();
+    authenticationHandler = new AuthenticationHandler(authService);
+    authorizationHandler = new AuthorizationHandler();
 
     ValidatorService validationService = ValidatorService.createProxy(vertx, VALIDATION_SERVICE_ADDRESS);
 
@@ -153,18 +154,18 @@ public class ApiServerVerticle extends AbstractVerticle {
     CrudService crudService = new CrudService(itemService);
     crudController = new CrudController(router, isUac, config().getString(HOST), crudService,
         validationService,
-        authHandler, validateAccessHandler, failureHandler);
+        authenticationHandler, authorizationHandler, failureHandler);
     crudController.setAuditingService(auditingService);
 
     ratingController = new RatingController(router, authService, validationService,
-        auditingService, ratingService, true, config().getString(HOST), authHandler,
-        validateAccessHandler, failureHandler);
+        auditingService, ratingService, true, config().getString(HOST), authenticationHandler,
+        authorizationHandler, failureHandler);
 
     listController = new ListController(router, elasticsearchService, docIndex);
     searchController = new SearchController(router, elasticsearchService, geoService,
         nlpsearchService, failureHandler, dxApiBasePath, docIndex);
     mlayerController = new MlayerController(config().getString(HOST), router, validationService,
-        mlayerService, failureHandler, authHandler);
+        mlayerService, failureHandler, authenticationHandler);
 
     RelationshipService relService = new RelationshipServiceImpl(elasticsearchService, docIndex);
     relationshipController = new RelationshipController(router, relService);
@@ -250,7 +251,7 @@ public class ApiServerVerticle extends AbstractVerticle {
         .route(api.getStackRestApis() + "/*")
         .subRouter(
             new StacController(router, api, config(), validationService, authService,
-                auditingService, elasticsearchService, authHandler, failureHandler)
+                auditingService, elasticsearchService, authenticationHandler, failureHandler)
                 .init());
 
     // Start server

@@ -25,7 +25,6 @@ import io.vertx.json.schema.ValidationException;
 import iudx.catalogue.server.common.HttpStatusCode;
 import iudx.catalogue.server.common.RespBuilder;
 import iudx.catalogue.server.common.ResponseUrn;
-import iudx.catalogue.server.common.util.ResponseUtil;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,16 +73,17 @@ public class FailureHandler implements Handler<RoutingContext> {
         || failure instanceof BodyProcessorException
         || failure instanceof RequestPredicateException
         || failure instanceof ParameterProcessorException) {
+      String type = ResponseUrn.BAD_REQUEST_URN.getUrn();
+      JsonObject response = new RespBuilder()
+          .withDetail("Missing or malformed request")
+          .withType(type)
+          .withTitle(HttpStatusCode.BAD_REQUEST.getDescription())
+          .getJsonResponse();
       routingContext
           .response()
           .putHeader(CONTENT_TYPE, APPLICATION_JSON)
           .setStatusCode(HttpStatus.SC_BAD_REQUEST)
-          .end(
-              ResponseUtil.generateResponse(
-                      HttpStatusCode.BAD_REQUEST,
-                      ResponseUrn.BAD_REQUEST_URN,
-                      "Missing or malformed request")
-                  .toString());
+          .end(response.toString());
     } else if (failure instanceof RuntimeException) {
       routingContext
           .response()

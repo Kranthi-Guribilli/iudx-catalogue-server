@@ -6,7 +6,7 @@
 package iudx.catalogue.server.apiserver;
 
 import static iudx.catalogue.server.apiserver.util.Constants.*;
-import static iudx.catalogue.server.common.util.ResponseUtils.*;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.*;
 import static iudx.catalogue.server.database.elastic.util.Constants.*;
 import static iudx.catalogue.server.geocoding.util.Constants.*;
 import static iudx.catalogue.server.geocoding.util.Constants.BBOX;

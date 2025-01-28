@@ -279,12 +279,7 @@ public class ValidatorServiceImpl implements ValidatorService {
 
     request.put(ITEM_STATUS, ACTIVE).put(ITEM_CREATED_AT, getUtcDatetimeAsString());
     String provider = request.getString(PROVIDER);
-    String checkQuery =
-        ITEM_EXISTS_QUERY
-            .replace("$1", provider)
-            .replace("$2", ITEM_TYPE_RESOURCE_GROUP)
-            .replace("$3", NAME)
-            .replace("$4", request.getString(NAME));
+
     QueryModel boolIdQuery = new QueryModel(QueryType.BOOL);
     boolIdQuery.addMustQuery(new QueryModel(QueryType.MATCH, Map.of(FIELD, ID_KEYWORD, VALUE,
         provider)));
@@ -310,6 +305,7 @@ public class ValidatorServiceImpl implements ValidatorService {
           DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
           responseMsg.statusSuccess();
           responseMsg.setTotalHits(responseList.size());
+          responseMsg.addResult();
           responseList.stream()
               .map(ElasticsearchResponse::getSource)
               .peek(source -> {
@@ -377,6 +373,7 @@ public class ValidatorServiceImpl implements ValidatorService {
           DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
           responseMsg.statusSuccess();
           responseMsg.setTotalHits(responseList.size());
+          responseMsg.addResult();
           responseList.stream()
               .map(ElasticsearchResponse::getSource)
               .peek(source -> {
@@ -440,6 +437,7 @@ public class ValidatorServiceImpl implements ValidatorService {
           DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
           responseMsg.statusSuccess();
           responseMsg.setTotalHits(responseList.size());
+          responseMsg.addResult();
           responseList.stream()
               .map(ElasticsearchResponse::getSource)
               .peek(source -> {
@@ -510,6 +508,7 @@ public class ValidatorServiceImpl implements ValidatorService {
           DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
           responseMsg.statusSuccess();
           responseMsg.setTotalHits(responseList.size());
+          responseMsg.addResult();
           responseList.stream()
               .map(ElasticsearchResponse::getSource)
               .peek(source -> {
@@ -580,6 +579,7 @@ public class ValidatorServiceImpl implements ValidatorService {
           DbResponseMessageBuilder responseMsg = new DbResponseMessageBuilder();
           responseMsg.statusSuccess();
           responseMsg.setTotalHits(responseList.size());
+          responseMsg.addResult();
           responseList.stream()
               .map(ElasticsearchResponse::getSource)
               .peek(source -> {

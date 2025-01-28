@@ -1,7 +1,7 @@
 package iudx.catalogue.server.database.elastic.service;
 
-import static iudx.catalogue.server.common.util.ResponseUtils.successResp;
-import static iudx.catalogue.server.common.util.ResponseUtils.successfulItemOperationResp;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.successResp;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.successfulItemOperationResp;
 import static iudx.catalogue.server.util.Constants.AGGREGATIONS;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;

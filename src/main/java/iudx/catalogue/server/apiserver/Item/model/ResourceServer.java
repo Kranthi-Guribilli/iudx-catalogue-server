@@ -2,8 +2,6 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,49 +11,33 @@ public class ResourceServer implements Item {
 
   private static final String UUID_PATTERN =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
-  private static final String NAME_PATTERN = "^[a-zA-Z0-9]([\\w-.]*[a-zA-Z0-9 ])?$";
+  private static final String NAME_PATTERN = "^[a-zA-Z0-9]([\\w-. ]*[a-zA-Z0-9 ])?$";
   private static final String REG_URL_PATTERN = "^[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-]{2,}){1,10}$";
-
-
-  @NotEmpty(message = "cos cannot be empty")
-  @Pattern(regexp = UUID_PATTERN, message = "Invalid ID format")
+  private final JsonObject requestJson;
   private UUID cos;
-  @NotEmpty(message = "owner cannot be empty")
-  @Pattern(regexp = UUID_PATTERN, message = "Invalid ID format")
   private UUID owner;
   private String itemStatus;
   private String itemCreatedAt;
-  @NotEmpty(message = "resourceServerOrg cannot be empty")
   private ResourceServerOrg resourceServerOrg;
-  @NotEmpty(message = "location cannot be empty")
   private Location location;
-  @NotEmpty(message = "resourceServerRegURL cannot be empty")
   private String resourceServerRegURL;
-  @NotEmpty(message = "resourceAccessModalities cannot be empty")
   private List<ResourceAccessModality> resourceAccessModalities;
-
   private UUID id;
-  @NotEmpty(message = "Type cannot be empty")
   private List<String> type;
-  @NotEmpty(message = "Name cannot be empty")
-  @Pattern(regexp = NAME_PATTERN, message = "Invalid name format")
   private String name;
-  @NotEmpty(message = "Description cannot be empty")
   private String description;
-  @NotEmpty(message = "Tags cannot be empty")
   private List<String> tags;
   private String context;
-  private final JsonObject requestJson;
 
 
   public ResourceServer(JsonObject json) {
     this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
-    this.type = json.getJsonArray("type", new JsonArray().add("iudx:ResourceServer")).getList();
+    this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
-    this.tags = json.getJsonArray("tags", new JsonArray()).getList();
+    this.tags = json.getJsonArray("tags").getList();
     this.cos = UUID.fromString(json.getString("cos"));
     this.owner = UUID.fromString(json.getString("owner"));
     this.itemStatus = json.getString("itemStatus");
@@ -85,7 +67,7 @@ public class ResourceServer implements Item {
   }
 
   private void validateFields() {
-    if (id == null || !id.toString().matches(UUID_PATTERN)) {
+    if (!id.toString().matches(UUID_PATTERN)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           UUID_PATTERN, id
@@ -133,8 +115,8 @@ public class ResourceServer implements Item {
     if (resourceServerOrg == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"resourceServerOrg\"])])");
     }
-    if (location == null) {
-      throw new IllegalArgumentException("[object has missing required properties ([\"location\"])])");
+    if (tags == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"tags\"])])");
     }
     if (resourceAccessModalities == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"resourceAccessModalities\"])])");
@@ -309,8 +291,8 @@ public class ResourceServer implements Item {
   }
 
   public static class ResourceServerOrg {
-    private String name;
-    private String additionalInfoURL;
+    private final String name;
+    private final String additionalInfoURL;
     private Location location;
 
     public ResourceServerOrg(JsonObject json) {
@@ -320,32 +302,52 @@ public class ResourceServer implements Item {
       if (locationJson != null) {
         this.location = new Location(locationJson);
       }
+      validateResourceServerOrgFields();
+    }
+
+    private void validateResourceServerOrgFields() {
+      if (name == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"name\"])])");
+      }
+      if (additionalInfoURL == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"additionalInfoURL\"])])");
+      }
+      if (location == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"location\"])])");
+      }
     }
 
     public JsonObject toJson() {
       JsonObject json = new JsonObject();
       json.put("name", name);
       json.put("additionalInfoURL", additionalInfoURL);
-      if (location != null) {
-        json.put("location", location.toJson());
-      }
+      json.put("location", location.toJson());
       return json;
     }
-
-    // Getters and setters...
   }
 
   public static class Location {
-    private String type;
-    private String address;
-    private Geometry geometry;
+    private final String type;
+    private final String address;
+    private final Geometry geometry;
 
     public Location(JsonObject json) {
       this.type = json.getString("type");
       this.address = json.getString("address");
       JsonObject geometryJson = json.getJsonObject("geometry");
-      if (geometryJson != null) {
-        this.geometry = new Geometry(geometryJson);
+      this.geometry = new Geometry(geometryJson);
+      validateLocationFields();
+    }
+
+    private void validateLocationFields() {
+      if (type == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"type\"])])");
+      }
+      if (address == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"address\"])])");
+      }
+      if (geometry == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"geometry\"])])");
       }
     }
 
@@ -353,47 +355,63 @@ public class ResourceServer implements Item {
       JsonObject json = new JsonObject();
       json.put("type", type);
       json.put("address", address);
-      if (geometry != null) {
-        json.put("geometry", geometry.toJson());
-      }
+      json.put("geometry", geometry.toJson());
       return json;
     }
-
-    // Getters and setters...
   }
 
   public static class Geometry {
-    private String type;
-    private List<Double> coordinates;
+    private final String type;
+    private final List<Double> coordinates;
 
     public Geometry(JsonObject json) {
       this.type = json.getString("type");
       this.coordinates = json.getJsonArray("coordinates").stream()
           .map(obj -> ((Number) obj).doubleValue())
           .collect(Collectors.toList());
+      validateGeometryFields();
     }
 
+    private void validateGeometryFields() {
+      if (type == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"type\"])])");
+      }
+      if (coordinates == null || coordinates.isEmpty()) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"coordinates\"])])");
+      }
+    }
     public JsonObject toJson() {
       JsonObject json = new JsonObject();
       json.put("type", type);
       json.put("coordinates", new JsonArray(coordinates));
       return json;
     }
-
-    // Getters and setters...
   }
 
   public static class ResourceAccessModality {
-    private List<String> type;
-    private String protocol;
-    private String accessURL;
-    private Integer port;
+    private final List<String> type;
+    private final String protocol;
+    private final String accessURL;
+    private final Integer port;
 
     public ResourceAccessModality(JsonObject json) {
       this.type = json.getJsonArray("type").getList();
       this.protocol = json.getString("protocol");
       this.accessURL = json.getString("accessURL");
       this.port = json.getInteger("port");
+      validateResourceAccessModalityFields();
+    }
+
+    private void validateResourceAccessModalityFields() {
+      if (type == null || type.isEmpty()) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"type\"])])");
+      }
+      if (protocol == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"protocol\"])])");
+      }
+      if (accessURL == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"accessURL\"])])");
+      }
     }
 
     public JsonObject toJson() {

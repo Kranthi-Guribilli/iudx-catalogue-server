@@ -2,8 +2,6 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,42 +10,31 @@ public class Resource implements Item {
   private static final String UUID_REGEX =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
   private static final String ACCESS_POLICY_REGEX = "^(SECURE|OPEN|PII|secure|open|pii)$";
-
-  @NotEmpty(message = "provider cannot be empty")
+  private final JsonObject requestJson;
   private String provider;
-  @NotEmpty(message = "resourceGroup cannot be empty")
   private String resourceGroup;
-  @NotEmpty(message = "resourceServer cannot be empty")
   private String resourceServer;
-  @NotEmpty(message = "Tags cannot be empty")
   private List<String> tags;
-  @NotEmpty(message = "apdURL cannot be empty")
   private String apdURL;
-  @NotEmpty(message = "accessPolicy cannot be empty")
   private String accessPolicy;
   private UUID id;
-  @NotEmpty(message = "Type cannot be empty")
   private List<String> type;
-  @NotEmpty(message = "Name cannot be empty")
-  @Pattern(regexp = NAME_REGEX, message = "Invalid name format")
   private String name;
-  @NotEmpty(message = "Description cannot be empty")
   private String description;
   private String ownerUserId;
   private String cos;
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
-  private final JsonObject requestJson;
 
   public Resource(JsonObject json) {
     this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
-    this.type = json.getJsonArray("type", new JsonArray()).getList();
+    this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
-    this.tags = json.getJsonArray("tags", new JsonArray()).getList();
+    this.tags = json.getJsonArray("tags").getList();
     this.provider = json.getString("provider");
     this.resourceGroup = json.getString("resourceGroup");
     this.resourceServer = json.getString("resourceServer");
@@ -62,7 +49,7 @@ public class Resource implements Item {
   }
 
   private void validateFields() {
-    if (id == null || !id.toString().matches(UUID_REGEX)) {
+    if (!id.toString().matches(UUID_REGEX)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           UUID_REGEX, id
@@ -80,20 +67,47 @@ public class Resource implements Item {
           NAME_REGEX, name
       ));
     }
-    if (provider == null || !provider.matches(UUID_REGEX)) {
-      throw new IllegalArgumentException("Invalid provider format");
+    if (tags == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"tags\"])])");
     }
-    if (resourceGroup == null || !resourceGroup.matches(UUID_REGEX)) {
-      throw new IllegalArgumentException("Invalid resourceGroup format");
+    if (provider == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"provider\"])])");
     }
-    if (resourceServer == null || !resourceServer.matches(UUID_REGEX)) {
-      throw new IllegalArgumentException("Invalid resourceServer format");
+    if (!provider.matches(UUID_REGEX)) {
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_REGEX, provider
+      ));
     }
-    if (apdURL == null || apdURL.isEmpty()) {
-      throw new IllegalArgumentException("ApdURL cannot be null or empty");
+    if (resourceGroup == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"resourceGroup\"])])");
     }
-    if (accessPolicy == null || !accessPolicy.matches(ACCESS_POLICY_REGEX)) {
-      throw new IllegalArgumentException("Invalid accessPolicy value");
+    if (!resourceGroup.matches(UUID_REGEX)) {
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_REGEX, resourceGroup
+      ));
+    }
+    if (resourceServer == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"resourceServer\"])])");
+    }
+    if (!resourceServer.matches(UUID_REGEX)) {
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_REGEX, resourceServer
+      ));
+    }
+    if (apdURL == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"apdURL\"])])");
+    }
+    if (accessPolicy == null) {
+      throw new IllegalArgumentException("[object has missing required properties ([\"accessPolicy\"])])");
+    }
+    if (!accessPolicy.matches(ACCESS_POLICY_REGEX)) {
+      throw new IllegalArgumentException(String.format(
+          "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
+          UUID_REGEX, resourceServer
+      ));
     }
   }
 

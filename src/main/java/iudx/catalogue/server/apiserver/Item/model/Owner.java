@@ -2,38 +2,27 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class Owner implements Item {
-  private static final Logger LOGGER = LogManager.getLogger(Owner.class);
   private static final String ID_REGEX =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
   private static final String NAME_REGEX = "^[a-zA-Z0-9]([\\w-]*[a-zA-Z0-9 ])?$";
-
-  @Pattern(regexp = ID_REGEX, message = "Invalid ID format")
+  private final JsonObject requestJson;
   private UUID id;
-  @NotEmpty(message = "Type cannot be empty")
   private List<String> type;
-  @NotEmpty(message = "Name cannot be empty")
-  @Pattern(regexp = NAME_REGEX, message = "Invalid name format")
   private String name;
-  @NotEmpty(message = "Description cannot be empty")
   private String description;
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
-  private final JsonObject requestJson;
 
   public Owner(JsonObject json) throws IllegalArgumentException {
     this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
-    this.type = json.getJsonArray("type", new JsonArray().add("iudx:Owner")).getList();
+    this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
     this.itemStatus = json.getString("itemStatus");
@@ -42,8 +31,7 @@ public class Owner implements Item {
   }
 
   private void validateFields() {
-    if (id == null || !id.toString().matches(ID_REGEX)) {
-      LOGGER.debug(id);
+    if (!id.toString().matches(ID_REGEX)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           ID_REGEX, id

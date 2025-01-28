@@ -1,11 +1,6 @@
 package iudx.catalogue.server.rating.controller;
 
-import static iudx.catalogue.server.apiserver.util.Constants.HEADER_CONTENT_TYPE;
-import static iudx.catalogue.server.apiserver.util.Constants.HEADER_TOKEN;
-import static iudx.catalogue.server.apiserver.util.Constants.MIME_APPLICATION_JSON;
-import static iudx.catalogue.server.apiserver.util.Constants.ROUTE_ITEMS;
-import static iudx.catalogue.server.apiserver.util.Constants.ROUTE_RATING;
-import static iudx.catalogue.server.apiserver.util.Constants.USERID;
+import static iudx.catalogue.server.apiserver.util.Constants.*;
 import static iudx.catalogue.server.auditing.util.Constants.API;
 import static iudx.catalogue.server.auditing.util.Constants.EPOCH_TIME;
 import static iudx.catalogue.server.auditing.util.Constants.ID;
@@ -15,18 +10,7 @@ import static iudx.catalogue.server.authenticator.Constants.RATINGS_ENDPOINT;
 import static iudx.catalogue.server.authenticator.model.DxRole.CONSUMER;
 import static iudx.catalogue.server.geocoding.util.Constants.RESULTS;
 import static iudx.catalogue.server.rating.util.Constants.APPROVED;
-import static iudx.catalogue.server.util.Constants.HTTP_METHOD;
-import static iudx.catalogue.server.util.Constants.REQUEST_DELETE;
-import static iudx.catalogue.server.util.Constants.REQUEST_GET;
-import static iudx.catalogue.server.util.Constants.REQUEST_POST;
-import static iudx.catalogue.server.util.Constants.REQUEST_PUT;
-import static iudx.catalogue.server.util.Constants.STATUS;
-import static iudx.catalogue.server.util.Constants.TITLE_INVALID_QUERY_PARAM_VALUE;
-import static iudx.catalogue.server.util.Constants.TITLE_INVALID_SCHEMA;
-import static iudx.catalogue.server.util.Constants.TITLE_SUCCESS;
-import static iudx.catalogue.server.util.Constants.TYPE_INVALID_QUERY_PARAM_VALUE;
-import static iudx.catalogue.server.util.Constants.TYPE_INVALID_SCHEMA;
-import static iudx.catalogue.server.util.Constants.UUID_PATTERN;
+import static iudx.catalogue.server.util.Constants.*;
 
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerRequest;
@@ -36,8 +20,8 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import iudx.catalogue.server.apiserver.util.RespBuilder;
 import iudx.catalogue.server.auditing.service.AuditingService;
-import iudx.catalogue.server.authenticator.handler.AuthHandler;
-import iudx.catalogue.server.authenticator.handler.ValidateAccessHandler;
+import iudx.catalogue.server.authenticator.handler.AuthenticationHandler;
+import iudx.catalogue.server.authenticator.handler.AuthorizationHandler;
 import iudx.catalogue.server.authenticator.model.JwtAuthenticationInfo;
 import iudx.catalogue.server.authenticator.model.JwtData;
 import iudx.catalogue.server.authenticator.service.AuthenticationService;
@@ -59,16 +43,16 @@ public class RatingController {
   private AuditingService auditingService;
   private RatingService ratingService;
   private boolean hasAuditService = false;
-  private String host;
-  private AuthHandler authHandler;
-  private ValidateAccessHandler validateAccessHandler;
-  private FailureHandler failureHandler;
+  private final String host;
+  private final AuthenticationHandler authenticationHandler;
+  private final AuthorizationHandler authorizationHandler;
+  private final FailureHandler failureHandler;
 
   public RatingController(Router router, AuthenticationService authService,
                           ValidatorService validatorService,
                           AuditingService auditingService, RatingService ratingService,
-                          boolean hasAuditService, String host, AuthHandler authHandler,
-                          ValidateAccessHandler validateAccessHandler,
+                          boolean hasAuditService, String host, AuthenticationHandler authenticationHandler,
+                          AuthorizationHandler authorizationHandler,
                           FailureHandler failureHandler) {
     this.router = router;
     this.authService = authService;
@@ -77,8 +61,8 @@ public class RatingController {
     this.ratingService = ratingService;
     this.hasAuditService = hasAuditService;
     this.host = host;
-    this.authHandler = authHandler;
-    this.validateAccessHandler = validateAccessHandler;
+    this.authenticationHandler = authenticationHandler;
+    this.authorizationHandler = authorizationHandler;
     this.failureHandler = failureHandler;
 
     setupRoutes();
@@ -95,8 +79,8 @@ public class RatingController {
         .handler(this::validateAuth)
         .handler(this::validateID)
         .handler(routingContext -> setAuthInfo(routingContext, REQUEST_POST))
-        .handler(authHandler)
-        .handler(validateAccessHandler.forRoleBasedAccess(CONSUMER))
+        .handler(authenticationHandler)
+        .handler(authorizationHandler.forRoleBasedAccess(CONSUMER))
         .handler(this::validateSchema)
         .handler(this::createRatingHandler)
         .handler(this::auditHandler)
@@ -122,14 +106,14 @@ public class RatingController {
           if (skipAuth != null && skipAuth) {
             routingContext.next();  // Skip authHandler and move to the next handler
           } else {
-            authHandler.handle(routingContext);  // Call authHandler only if skipAuth is false
+            authenticationHandler.handle(routingContext);  // Call authHandler only if skipAuth is false
             routingContext.next();
           }
         })
         .handler(routingContext -> {
           Boolean skipAuth = routingContext.get("skipAuth");
           if (skipAuth == null || !skipAuth) {
-            validateAccessHandler.forRoleBasedAccess(
+            authorizationHandler.forRoleBasedAccess(
                 CONSUMER);  // Only validate access if auth is required
           } else {
             routingContext.next();  // Move to the next handler regardless
@@ -152,8 +136,8 @@ public class RatingController {
         .handler(this::validateAuth)
         .handler(this::validateID)
         .handler(routingContext -> setAuthInfo(routingContext, REQUEST_PUT))
-        .handler(authHandler)
-        .handler(validateAccessHandler.forRoleBasedAccess(CONSUMER))
+        .handler(authenticationHandler)
+        .handler(authorizationHandler.forRoleBasedAccess(CONSUMER))
         .handler(this::validateSchema)
         .handler(this::updateRatingHandler)
         .handler(this::auditHandler)
@@ -166,8 +150,8 @@ public class RatingController {
         .handler(this::validateAuth)
         .handler(this::validateID)
         .handler(routingContext -> setAuthInfo(routingContext, REQUEST_DELETE))
-        .handler(authHandler)
-        .handler(validateAccessHandler.forRoleBasedAccess(CONSUMER))
+        .handler(authenticationHandler)
+        .handler(authorizationHandler.forRoleBasedAccess(CONSUMER))
         .handler(this::deleteRatingHandler)
         .handler(this::auditHandler)
         .failureHandler(failureHandler);

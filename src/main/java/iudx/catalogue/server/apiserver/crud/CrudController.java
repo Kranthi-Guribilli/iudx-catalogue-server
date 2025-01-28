@@ -4,11 +4,7 @@ import static iudx.catalogue.server.apiserver.util.Constants.*;
 import static iudx.catalogue.server.auditing.util.Constants.API;
 import static iudx.catalogue.server.auditing.util.Constants.EPOCH_TIME;
 import static iudx.catalogue.server.auditing.util.Constants.IUDX_ID;
-import static iudx.catalogue.server.common.util.ResponseUtils.invalidSchemaResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.invalidSyntaxResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.invalidUuidResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.itemNotFoundResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.linkValidationFailureResponse;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.*;
 import static iudx.catalogue.server.rating.util.Constants.USER_ID;
 import static iudx.catalogue.server.util.Constants.*;
 
@@ -22,8 +18,8 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import iudx.catalogue.server.apiserver.Item.model.*;
 import iudx.catalogue.server.auditing.service.AuditingService;
-import iudx.catalogue.server.authenticator.handler.AuthHandler;
-import iudx.catalogue.server.authenticator.handler.ValidateAccessHandler;
+import iudx.catalogue.server.authenticator.handler.AuthenticationHandler;
+import iudx.catalogue.server.authenticator.handler.AuthorizationHandler;
 import iudx.catalogue.server.authenticator.model.DxRole;
 import iudx.catalogue.server.authenticator.model.JwtAuthenticationInfo;
 import iudx.catalogue.server.authenticator.model.JwtAuthenticationInfo.Builder;
@@ -57,8 +53,8 @@ public class CrudController {
   private final CrudService crudService;
   private final ValidatorService validatorService;
   private final boolean isUac;
-  private final AuthHandler authHandler;
-  private final ValidateAccessHandler validateAccessHandler;
+  private final AuthenticationHandler authenticationHandler;
+  private final AuthorizationHandler authorizationHandler;
   private final FailureHandler failureHandler;
   private final String host;
   private AuditingService auditingService;
@@ -72,15 +68,15 @@ public class CrudController {
    */
   public CrudController(Router router, boolean isUac, String host, CrudService crudService,
                         ValidatorService validatorService,
-                        AuthHandler authHandler, ValidateAccessHandler validateAccessHandler,
+                        AuthenticationHandler authenticationHandler, AuthorizationHandler authorizationHandler,
                         FailureHandler failureHandler) {
     this.router = router;
     this.isUac = isUac;
     this.host = host;
     this.crudService = crudService;
     this.validatorService = validatorService;
-    this.authHandler = authHandler;
-    this.validateAccessHandler = validateAccessHandler;
+    this.authenticationHandler = authenticationHandler;
+    this.authorizationHandler = authorizationHandler;
     this.failureHandler = failureHandler;
 
     setupRoutes();
@@ -110,9 +106,9 @@ public class CrudController {
         .produces(MIME_APPLICATION_JSON)
         .handler(this::validateAuth)
         .handler(this::validateItemSchema)
-        .handler(authHandler)
+        .handler(authenticationHandler)
         .handler(this::itemLinkValidation)
-        .handler(validateAccessHandler.forRoleAndEntityAccess(DxRole.COS_ADMIN, DxRole.ADMIN,
+        .handler(authorizationHandler.forRoleAndEntityAccess(DxRole.COS_ADMIN, DxRole.ADMIN,
             DxRole.PROVIDER, DxRole.DELEGATE))
         .handler(this::createOrUpdateItemHandler)
         .handler(this::auditHandler)
@@ -125,9 +121,9 @@ public class CrudController {
         .produces(MIME_APPLICATION_JSON)
         .handler(this::validateAuth)
         .handler(this::validateItemSchema)
-        .handler(authHandler)
+        .handler(authenticationHandler)
         .handler(this::itemLinkValidation)
-        .handler(validateAccessHandler.forRoleAndEntityAccess(DxRole.COS_ADMIN, DxRole.ADMIN,
+        .handler(authorizationHandler.forRoleAndEntityAccess(DxRole.COS_ADMIN, DxRole.ADMIN,
             DxRole.PROVIDER, DxRole.DELEGATE))
         .handler(this::createOrUpdateItemHandler)
         .handler(this::auditHandler)
@@ -137,7 +133,8 @@ public class CrudController {
     router
         .get(ROUTE_ITEMS)
         .produces(MIME_APPLICATION_JSON)
-        .handler(this::getItemHandler);
+        .handler(this::getItemHandler)
+        .failureHandler(failureHandler);
 
     /* Delete Item - Query param contains id */
     router
@@ -145,11 +142,12 @@ public class CrudController {
         .produces(MIME_APPLICATION_JSON)
         .handler(this::validateAuth)
         .handler(this::validateDeleteItemHandler)
-        .handler(authHandler)
-        .handler(validateAccessHandler.forRoleAndEntityAccess(DxRole.COS_ADMIN, DxRole.ADMIN,
+        .handler(authenticationHandler)
+        .handler(authorizationHandler.forRoleAndEntityAccess(DxRole.COS_ADMIN, DxRole.ADMIN,
             DxRole.PROVIDER, DxRole.DELEGATE))
         .handler(this::deleteItemHandler)
-        .handler(this::auditHandler);
+        .handler(this::auditHandler)
+        .failureHandler(failureHandler);
 
     /* Create instance - Instance name in query param */
     router
@@ -158,7 +156,7 @@ public class CrudController {
         .handler(this::validateAuth)
         .handler(routingContext -> populateAuthInfo(routingContext, REQUEST_POST))
         // Populate authentication info
-        .handler(authHandler) // Authentication
+        .handler(authenticationHandler) // Authentication
         .handler(this::createInstanceHandler)
         .failureHandler(failureHandler);
 
@@ -169,7 +167,7 @@ public class CrudController {
         .handler(this::validateAuth)
         .handler(routingContext -> populateAuthInfo(routingContext, REQUEST_DELETE))
         // Populate authentication info
-        .handler(authHandler) // Authentication
+        .handler(authenticationHandler) // Authentication
         .handler(this::deleteInstanceHandler)
         .failureHandler(failureHandler);
 
@@ -455,11 +453,13 @@ public class CrudController {
           JsonObject retrievedItem = getHandler.result();
           response.setStatusCode(200).end(retrievedItem.toString());
         } else {
-          if (getHandler.cause() instanceof NoSuchElementException) {
+          if (getHandler.cause().getLocalizedMessage().contains("urn:dx:cat:ItemNotFound")) {
             LOGGER.error("Fail: Item not found");
             JsonObject errorResponse = new JsonObject()
-                .put(STATUS, ERROR)
                 .put(TYPE, TYPE_ITEM_NOT_FOUND)
+                .put(STATUS, ERROR)
+                .put(TOTAL_HITS, 0)
+                .put(RESULTS, new JsonArray())
                 .put(DETAIL, "doc doesn't exist");
             response.setStatusCode(404).end(errorResponse.toString());
           } else {

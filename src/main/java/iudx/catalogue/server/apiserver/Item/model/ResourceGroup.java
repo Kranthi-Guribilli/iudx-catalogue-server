@@ -4,8 +4,6 @@ import static iudx.catalogue.server.util.Constants.UUID_PATTERN;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,35 +12,28 @@ public class ResourceGroup implements Item {
   private static final String NAME_REGEX = "^[a-zA-Z0-9]([\\w-]*[a-zA-Z0-9 ])?$";
   private static final String PROVIDER_REGEX =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
-
-  @NotEmpty(message = "Provider cannot be empty")
-  @Pattern(regexp = PROVIDER_REGEX, message = "Invalid provider format")
+  private final JsonObject requestJson;
   private String provider;
   private UUID id;
-  @NotEmpty(message = "Type cannot be empty")
   private List<String> type;
-  @NotEmpty(message = "Name cannot be empty")
-  @Pattern(regexp = NAME_REGEX, message = "Invalid name format")
   private String name;
   private String description;
-  @NotEmpty(message = "Type cannot be empty")
   private List<String> tags;
   private String ownerUserId;
   private String cos;
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
-  private final JsonObject requestJson;
 
 
   public ResourceGroup(JsonObject json) {
     this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
-    this.type = json.getJsonArray("type", new JsonArray().add("iudx:ResourceGroup")).getList();
+    this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
-    this.tags = json.getJsonArray("tags", new JsonArray()).getList();
+    this.tags = json.getJsonArray("tags").getList();
     this.provider = json.getString("provider");
     this.ownerUserId = json.getString("ownerUserId");
     this.cos = json.getString("cos");
@@ -52,7 +43,7 @@ public class ResourceGroup implements Item {
   }
 
   private void validateFields() {
-    if (id == null || !UUID_PATTERN.matcher(id.toString()).matches()) {
+    if (!UUID_PATTERN.matcher(id.toString()).matches()) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           UUID_PATTERN, id

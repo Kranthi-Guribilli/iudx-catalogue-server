@@ -1,6 +1,6 @@
 package iudx.catalogue.server.apiserver.Item.service;
 
-import static iudx.catalogue.server.common.util.ResponseUtils.*;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.*;
 import static iudx.catalogue.server.database.elastic.util.BoolOperator.*;
 import static iudx.catalogue.server.database.elastic.util.Constants.*;
 import static iudx.catalogue.server.util.Constants.*;

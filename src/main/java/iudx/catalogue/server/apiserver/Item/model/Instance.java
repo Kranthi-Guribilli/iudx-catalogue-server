@@ -2,19 +2,17 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.UUID;
 
 public class Instance implements Item {
-  @NotEmpty(message = "Type cannot be empty")
   private final List<String> type;
   private String instance;
   private String id;
 
   public Instance(JsonObject json) {
     this.id = json.getString("id");
-    this.type = json.getJsonArray("type", new JsonArray()).getList();
+    this.type = json.getJsonArray("type").getList();
     this.instance = json.getString("instance");
   }
 
@@ -32,9 +30,7 @@ public class Instance implements Item {
   }
 
   @Override
-  public void setContext(String context) {
-
-  }
+  public void setContext(String context) {}
 
   @Override
   public UUID getId() {
@@ -46,9 +42,7 @@ public class Instance implements Item {
   }
 
   @Override
-  public void setId(UUID id) {
-
-  }
+  public void setId(UUID id) {}
 
   @Override
   public List<String> getType() {
@@ -56,9 +50,7 @@ public class Instance implements Item {
   }
 
   @Override
-  public void setType(List<String> type) {
-
-  }
+  public void setType(List<String> type) {}
 
   @Override
   public String getName() {
@@ -66,9 +58,7 @@ public class Instance implements Item {
   }
 
   @Override
-  public void setName(String name) {
-
-  }
+  public void setName(String name) {}
 
   @Override
   public String getDescription() {
@@ -76,9 +66,7 @@ public class Instance implements Item {
   }
 
   @Override
-  public void setDescription(String description) {
-
-  }
+  public void setDescription(String description) {}
 
   @Override
   public String getItemStatus() {
@@ -86,9 +74,7 @@ public class Instance implements Item {
   }
 
   @Override
-  public void setItemStatus(String itemStatus) {
-
-  }
+  public void setItemStatus(String itemStatus) {}
 
   @Override
   public String getItemCreatedAt() {
@@ -96,9 +82,7 @@ public class Instance implements Item {
   }
 
   @Override
-  public void setItemCreatedAt(String itemCreatedAt) {
-
-  }
+  public void setItemCreatedAt(String itemCreatedAt) {}
 
   @Override
   public JsonObject toJson() {

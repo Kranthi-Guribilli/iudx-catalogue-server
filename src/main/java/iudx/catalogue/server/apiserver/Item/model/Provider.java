@@ -2,8 +2,6 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,19 +11,12 @@ public class Provider implements Item {
       "^[a-zA-Z0-9(\\[]([\\w().\\[\\] &\\-]*[a-zA-Z0-9).\\]])?$";
   private static final String UUID_REGEX =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
-
+  private final JsonObject requestJson;
   private UUID id;
-  @NotEmpty(message = "Type cannot be empty")
   private List<String> type;
-  @NotEmpty(message = "Name cannot be empty")
-  @Pattern(regexp = NAME_REGEX, message = "Invalid name format")
   private String name;
-  @NotEmpty(message = "Description cannot be null or empty")
   private String description;
-  @NotEmpty(message = "ProviderOrg cannot be null or empty")
   private ProviderOrg providerOrg;
-  @NotEmpty(message = "Owner cannot be null or empty")
-  @Pattern(regexp = UUID_REGEX, message = "Invalid owner format")
   private UUID ownerUserId;
   private UUID resourceServer;
   private String resourceServerRegURL;
@@ -33,13 +24,12 @@ public class Provider implements Item {
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
-  private final JsonObject requestJson;
 
   public Provider(JsonObject json) {
     this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
-    this.type = json.getJsonArray("type", new JsonArray().add("iudx:Provider")).getList();
+    this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
     this.ownerUserId = UUID.fromString(json.getString("ownerUserId"));
@@ -58,7 +48,7 @@ public class Provider implements Item {
   }
 
   private void validateFields() {
-    if (id == null || !id.toString().matches(UUID_REGEX)) {
+    if (!id.toString().matches(UUID_REGEX)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           UUID_REGEX, id
@@ -75,6 +65,10 @@ public class Provider implements Item {
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           NAME_REGEX, name
       ));
+    }
+    if (providerOrg == null) {
+      throw new IllegalArgumentException(
+          "[object has missing required properties ([\"providerOrg\"])])");
     }
     if (ownerUserId == null) {
       throw new IllegalArgumentException("[object has missing required properties ([\"ownerUserId\"])])");
@@ -251,6 +245,19 @@ public class Provider implements Item {
       if (locationJson != null) {
         this.location = new Location(locationJson);
       }
+      validateProviderOrgFields();
+    }
+
+    private void validateProviderOrgFields() {
+      if (name == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"name\"])])");
+      }
+      if (additionalInfoURL == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"additionalInfoURL\"])])");
+      }
+      if (location == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"location\"])])");
+      }
     }
 
     public String getName() {
@@ -303,6 +310,19 @@ public class Provider implements Item {
       if (geometryJson != null) {
         this.geometry = new Geometry(geometryJson);
       }
+      validateLocationFields();
+    }
+
+    private void validateLocationFields() {
+      if (type == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"type\"])])");
+      }
+      if (address == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"address\"])])");
+      }
+      if (geometry == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"geometry\"])])");
+      }
     }
 
     public String getType() {
@@ -350,6 +370,16 @@ public class Provider implements Item {
     public Geometry(JsonObject json) {
       this.type = json.getString("type");
       this.coordinates = json.getJsonArray("coordinates").getList();
+      validateGeometryFields();
+    }
+
+    private void validateGeometryFields() {
+      if (type == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"type\"])])");
+      }
+      if (coordinates == null) {
+        throw new IllegalArgumentException("[object has missing required properties ([\"coordinates\"])])");
+      }
     }
 
     public String getType() {

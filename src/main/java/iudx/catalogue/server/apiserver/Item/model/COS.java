@@ -2,45 +2,32 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
 
 public class COS implements Item {
   private static final String UUID_REGEX =
       "^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$";
-  private static final String NAME_REGEX = "^[a-zA-Z0-9-]([\\w-.]*[a-zA-Z0-9- ])?$";
+  private static final String NAME_REGEX = "^[a-zA-Z0-9-]([\\w-. ]*[a-zA-Z0-9- ])?$";
   private static final String COS_URL_REGEX = "^[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-/]{2,}){1,5}$";
-  private static final String COS_UI_REGEX = "^[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-/]{2,}){1,5}$";
-
-  @NotEmpty(message = "Owner cannot be null or empty")
-  @Pattern(regexp = UUID_REGEX, message = "Invalid owner format")
+  private static final String COS_UI_REGEX = "^https://[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-/]{2,}){1,5}$";
+  private final JsonObject requestJson;
   private UUID owner;
-  @NotEmpty(message = "COS URL cannot be null or empty")
-  @Pattern(regexp = COS_URL_REGEX, message = "Invalid COS URL format")
   private String cosURL;
-  @NotEmpty(message = "COS UI cannot be null or empty")
-  @Pattern(regexp = COS_UI_REGEX, message = "Invalid COS UI URL format")
   private String cosUI;
   private String context;
   private String itemStatus;
   private String itemCreatedAt;
   private UUID id;
-  @NotEmpty(message = "Type cannot be empty")
   private List<String> type;
-  @NotEmpty(message = "Name cannot be empty")
-  @Pattern(regexp = NAME_REGEX, message = "Invalid name format")
   private String name;
-  @NotEmpty(message = "Description cannot be null or empty")
   private String description;
-  private final JsonObject requestJson;
 
   public COS(JsonObject json) {
     this.requestJson = json.copy(); // Store a copy of the input JSON
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
-    this.type = json.getJsonArray("type", new JsonArray().add("iudx:COS")).getList();
+    this.type = json.getJsonArray("type").getList();
     this.name = json.getString("name");
     this.description = json.getString("description");
     this.owner = UUID.fromString(json.getString("owner"));
@@ -53,7 +40,7 @@ public class COS implements Item {
 
 
   private void validateFields() {
-    if (id == null || !id.toString().matches(UUID_REGEX)) {
+    if (!id.toString().matches(UUID_REGEX)) {
       throw new IllegalArgumentException(String.format(
           "[ECMA 262 regex \"%s\" does not match input string \"%s\"]",
           UUID_REGEX, id

@@ -9,7 +9,7 @@
 package iudx.catalogue.server.apiserver;
 
 import static iudx.catalogue.server.apiserver.util.Constants.*;
-import static iudx.catalogue.server.common.util.ResponseUtils.internalErrorResp;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.internalErrorResp;
 import static iudx.catalogue.server.database.elastic.util.Constants.KEY;
 import static iudx.catalogue.server.database.elastic.util.Constants.SUMMARY_KEY;
 import static iudx.catalogue.server.database.elastic.util.Constants.WORD_VECTOR_KEY;

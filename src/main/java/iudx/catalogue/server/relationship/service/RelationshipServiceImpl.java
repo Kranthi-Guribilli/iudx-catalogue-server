@@ -1,9 +1,9 @@
 package iudx.catalogue.server.relationship.service;
 
-import static iudx.catalogue.server.common.util.ResponseUtils.internalErrorResp;
-import static iudx.catalogue.server.common.util.ResponseUtils.invalidParameterResp;
-import static iudx.catalogue.server.common.util.ResponseUtils.invalidSearchError;
-import static iudx.catalogue.server.common.util.ResponseUtils.itemNotFoundResponse;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.internalErrorResp;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.invalidParameterResp;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.invalidSearchError;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.itemNotFoundResponse;
 import static iudx.catalogue.server.database.elastic.util.Constants.ID_KEYWORD;
 import static iudx.catalogue.server.database.elastic.util.Constants.KEYWORD_KEY;
 import static iudx.catalogue.server.database.elastic.util.Constants.SUMMARY_KEY;

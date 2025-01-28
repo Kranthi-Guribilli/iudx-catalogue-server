@@ -1,13 +1,7 @@
 package iudx.catalogue.server.rating.service;
 
 import static iudx.catalogue.server.auditing.util.Constants.ID;
-import static iudx.catalogue.server.common.util.ResponseUtils.failureResp;
-import static iudx.catalogue.server.common.util.ResponseUtils.failureResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.internalErrorResp;
-import static iudx.catalogue.server.common.util.ResponseUtils.itemAlreadyExistsResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.itemNotFoundResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.ratingSuccessResponse;
-import static iudx.catalogue.server.common.util.ResponseUtils.successResponse;
+import static iudx.catalogue.server.common.util.ResponseBuilderUtil.*;
 import static iudx.catalogue.server.database.elastic.model.ElasticsearchResponse.getAggregations;
 import static iudx.catalogue.server.database.elastic.util.AggregationType.AVG;
 import static iudx.catalogue.server.database.elastic.util.Constants.DOC_COUNT;

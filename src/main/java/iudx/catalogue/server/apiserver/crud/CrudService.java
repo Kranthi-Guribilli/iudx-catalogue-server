@@ -70,7 +70,6 @@ public class CrudService {
 
     itemService.getItem(requestBody).onComplete(res -> {
       if (res.failed()) {
-        LOGGER.error("Fail: Item retrieval failed; " + res.cause().getMessage());
         promise.fail(res.cause());
       } else {
         JsonObject response = res.result();
