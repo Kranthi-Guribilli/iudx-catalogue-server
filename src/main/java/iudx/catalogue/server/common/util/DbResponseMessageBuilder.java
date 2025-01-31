@@ -10,14 +10,13 @@ import static iudx.catalogue.server.util.Constants.TYPE_SUCCESS;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import iudx.catalogue.server.database.elastic.model.ElasticsearchResponse;
 
 /**
  * DbResponseMessageBuilder Message builder for search APIs.
  */
 public class DbResponseMessageBuilder {
-  private JsonObject response = new JsonObject();
-  private JsonArray results = new JsonArray();
+  private final JsonObject response = new JsonObject();
+  private final JsonArray results = new JsonArray();
 
   public DbResponseMessageBuilder() {
   }

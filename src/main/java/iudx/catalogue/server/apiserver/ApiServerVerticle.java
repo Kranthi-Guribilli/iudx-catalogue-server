@@ -19,6 +19,7 @@ import iudx.catalogue.server.apiserver.Item.service.ItemServiceImpl;
 import iudx.catalogue.server.apiserver.crud.CrudController;
 import iudx.catalogue.server.apiserver.crud.CrudService;
 import iudx.catalogue.server.apiserver.stack.controller.StacController;
+import iudx.catalogue.server.auditing.handler.AuditHandler;
 import iudx.catalogue.server.auditing.service.AuditingService;
 import iudx.catalogue.server.authenticator.handler.AuthenticationHandler;
 import iudx.catalogue.server.authenticator.handler.AuthorizationHandler;
@@ -89,7 +90,7 @@ public class ApiServerVerticle extends AbstractVerticle {
   @Override
   public void start() throws Exception {
     Router router = Router.router(vertx);
-    router.route().handler(BodyHandler.create());  // Add BodyHandler to handle request bodies
+    router.route().handler(BodyHandler.create()); // Add BodyHandler to handle request bodies
     dxApiBasePath = config().getString("dxApiBasePath");
     docIndex = config().getString("docIndex");
     api = Api.getInstance(dxApiBasePath);
@@ -120,8 +121,7 @@ public class ApiServerVerticle extends AbstractVerticle {
     // API Callback managers
 
     // Todo - Set service proxies based on availability?
-    ElasticsearchService elasticsearchService = ElasticsearchService.createProxy(vertx,
-        ELASTIC_SERVICE_ADDRESS);
+    ElasticsearchService elasticsearchService = ElasticsearchService.createProxy(vertx, ELASTIC_SERVICE_ADDRESS);
 
     RatingService ratingService = RatingService.createProxy(vertx, RATING_SERVICE_ADDRESS);
 
@@ -140,6 +140,8 @@ public class ApiServerVerticle extends AbstractVerticle {
     NLPSearchService nlpsearchService = NLPSearchService.createProxy(vertx, NLP_SERVICE_ADDRESS);
 
     AuditingService auditingService = AuditingService.createProxy(vertx, AUDITING_SERVICE_ADDRESS);
+    AuditHandler auditHandler = new AuditHandler(auditingService);
+
     FailureHandler failureHandler = new FailureHandler();
 
     ItemService itemService;
@@ -152,20 +154,45 @@ public class ApiServerVerticle extends AbstractVerticle {
       itemService = new ItemServiceImpl(elasticsearchService, config());
     }
     CrudService crudService = new CrudService(itemService);
-    crudController = new CrudController(router, isUac, config().getString(HOST), crudService,
-        validationService,
-        authenticationHandler, authorizationHandler, failureHandler);
-    crudController.setAuditingService(auditingService);
-
-    ratingController = new RatingController(router, authService, validationService,
-        auditingService, ratingService, true, config().getString(HOST), authenticationHandler,
-        authorizationHandler, failureHandler);
-
+    crudController =
+        new CrudController(
+            router,
+            isUac,
+            config().getString(HOST),
+            crudService,
+            validationService,
+            authenticationHandler,
+            authorizationHandler,
+            auditHandler,
+            failureHandler);
+    ratingController =
+        new RatingController(
+            router,
+            validationService,
+            ratingService,
+            config().getString(HOST),
+            authenticationHandler,
+            authorizationHandler,
+            auditHandler,
+            failureHandler);
     listController = new ListController(router, elasticsearchService, docIndex);
-    searchController = new SearchController(router, elasticsearchService, geoService,
-        nlpsearchService, failureHandler, dxApiBasePath, docIndex);
-    mlayerController = new MlayerController(config().getString(HOST), router, validationService,
-        mlayerService, failureHandler, authenticationHandler);
+    searchController =
+        new SearchController(
+            router,
+            elasticsearchService,
+            geoService,
+            nlpsearchService,
+            failureHandler,
+            dxApiBasePath,
+            docIndex);
+    mlayerController =
+        new MlayerController(
+            config().getString(HOST),
+            router,
+            validationService,
+            mlayerService,
+            failureHandler,
+            authenticationHandler);
 
     RelationshipService relService = new RelationshipServiceImpl(elasticsearchService, docIndex);
     relationshipController = new RelationshipController(router, relService);
@@ -250,8 +277,15 @@ public class ApiServerVerticle extends AbstractVerticle {
     router
         .route(api.getStackRestApis() + "/*")
         .subRouter(
-            new StacController(router, api, config(), validationService, authService,
-                auditingService, elasticsearchService, authenticationHandler, failureHandler)
+            new StacController(
+                    router,
+                    api,
+                    config(),
+                    validationService,
+                    auditHandler,
+                    elasticsearchService,
+                    authenticationHandler,
+                    failureHandler)
                 .init());
 
     // Start server

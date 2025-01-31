@@ -2,7 +2,6 @@ package iudx.catalogue.server.apiserver.Item.model;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import jakarta.validation.constraints.NotEmpty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -19,7 +18,6 @@ public class Provider implements Item {
   private String description;
   private ProviderOrg providerOrg;
   private UUID ownerUserId;
-  @NotEmpty
   private UUID resourceServer;
   private String resourceServerRegURL;
   private String cos;
@@ -28,7 +26,7 @@ public class Provider implements Item {
   private String itemCreatedAt;
 
   public Provider(JsonObject json) {
-    this.requestJson = json.copy(); // Store a copy of the input JSON
+    this.requestJson = json;
     this.context = json.getString("@context");
     this.id = UUID.fromString(json.getString("id", UUID.randomUUID().toString()));
     this.type = json.getJsonArray("type").getList();

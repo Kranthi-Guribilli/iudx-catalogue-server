@@ -1,5 +1,10 @@
 package iudx.catalogue.server.apiserver.util;
 
+import static iudx.catalogue.server.apiserver.util.Constants.*;
+import static iudx.catalogue.server.apiserver.util.Constants.MIME_APPLICATION_JSON;
+import static junit.framework.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerRequest;
@@ -8,18 +13,11 @@ import io.vertx.core.json.DecodeException;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static iudx.catalogue.server.apiserver.util.Constants.*;
-import static iudx.catalogue.server.apiserver.util.Constants.MIME_APPLICATION_JSON;
-import static junit.framework.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @ExtendWith(VertxExtension.class)

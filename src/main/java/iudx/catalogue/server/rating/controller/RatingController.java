@@ -19,13 +19,14 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import iudx.catalogue.server.apiserver.util.RespBuilder;
+import iudx.catalogue.server.auditing.handler.AuditHandler;
 import iudx.catalogue.server.auditing.service.AuditingService;
 import iudx.catalogue.server.authenticator.handler.AuthenticationHandler;
 import iudx.catalogue.server.authenticator.handler.AuthorizationHandler;
 import iudx.catalogue.server.authenticator.model.JwtAuthenticationInfo;
 import iudx.catalogue.server.authenticator.model.JwtData;
 import iudx.catalogue.server.authenticator.service.AuthenticationService;
-import iudx.catalogue.server.common.ContextHelper;
+import iudx.catalogue.server.common.RoutingContextHelper;
 import iudx.catalogue.server.exceptions.FailureHandler;
 import iudx.catalogue.server.rating.service.RatingService;
 import iudx.catalogue.server.rating.util.Constants;
@@ -38,31 +39,27 @@ public class RatingController {
   private static final Logger LOGGER = LogManager.getLogger(RatingController.class);
 
   private final Router router;
-  private AuthenticationService authService;
   private ValidatorService validatorService;
-  private AuditingService auditingService;
   private RatingService ratingService;
-  private boolean hasAuditService = false;
   private final String host;
   private final AuthenticationHandler authenticationHandler;
   private final AuthorizationHandler authorizationHandler;
+  private final AuditHandler auditHandler;
   private final FailureHandler failureHandler;
 
-  public RatingController(Router router, AuthenticationService authService,
-                          ValidatorService validatorService,
-                          AuditingService auditingService, RatingService ratingService,
-                          boolean hasAuditService, String host, AuthenticationHandler authenticationHandler,
+  public RatingController(Router router, ValidatorService validatorService,
+                          RatingService ratingService, String host,
+                          AuthenticationHandler authenticationHandler,
                           AuthorizationHandler authorizationHandler,
+                          AuditHandler auditHandler,
                           FailureHandler failureHandler) {
     this.router = router;
-    this.authService = authService;
     this.validatorService = validatorService;
-    this.auditingService = auditingService;
     this.ratingService = ratingService;
-    this.hasAuditService = hasAuditService;
     this.host = host;
     this.authenticationHandler = authenticationHandler;
     this.authorizationHandler = authorizationHandler;
+    this.auditHandler = auditHandler;
     this.failureHandler = failureHandler;
 
     setupRoutes();
@@ -83,7 +80,7 @@ public class RatingController {
         .handler(authorizationHandler.forRoleBasedAccess(CONSUMER))
         .handler(this::validateSchema)
         .handler(this::createRatingHandler)
-        .handler(this::auditHandler)
+        .handler(context -> auditHandler.handle(context, ROUTE_RATING))
         .failureHandler(failureHandler);
 
     /* Get Ratings */
@@ -123,7 +120,7 @@ public class RatingController {
         .handler(routingContext -> {
           Boolean skipAuth = routingContext.get("skipAuth");
           if (skipAuth == null || !skipAuth) {
-            auditHandler(routingContext);
+            auditHandler.handle(routingContext, ROUTE_RATING);
           }
         })
         .failureHandler(failureHandler);
@@ -140,7 +137,7 @@ public class RatingController {
         .handler(authorizationHandler.forRoleBasedAccess(CONSUMER))
         .handler(this::validateSchema)
         .handler(this::updateRatingHandler)
-        .handler(this::auditHandler)
+        .handler(context -> auditHandler.handle(context, ROUTE_RATING))
         .failureHandler(failureHandler);
 
     /* Delete Rating */
@@ -153,7 +150,7 @@ public class RatingController {
         .handler(authenticationHandler)
         .handler(authorizationHandler.forRoleBasedAccess(CONSUMER))
         .handler(this::deleteRatingHandler)
-        .handler(this::auditHandler)
+        .handler(context -> auditHandler.handle(context, ROUTE_RATING))
         .failureHandler(failureHandler);
   }
 
@@ -211,7 +208,7 @@ public class RatingController {
         .setApiEndpoint(RATINGS_ENDPOINT)
         .setId(host)
         .build();
-    ContextHelper.setJwtAuthInfo(routingContext, jwtAuthenticationInfo);
+    RoutingContextHelper.setJwtAuthInfo(routingContext, jwtAuthenticationInfo);
     routingContext.next();
   }
 
@@ -221,11 +218,11 @@ public class RatingController {
     HttpServerResponse response = routingContext.response();
     JsonObject requestBody = routingContext.body().asJsonObject();
     String id = routingContext.request().getParam(ID);
-    JwtData jwtData = ContextHelper.getJwtDecodedInfo(routingContext);
+    JwtData jwtData = RoutingContextHelper.getJwtDecodedInfo(routingContext);
     String userID = jwtData.getSub();
 
     requestBody.put(ID, id).put(USER_ID, userID).put("status", APPROVED);
-    ContextHelper.setValidatedRequest(routingContext, requestBody);
+    RoutingContextHelper.setValidatedRequest(routingContext, requestBody);
 
     Future<JsonObject> validationFuture = validatorService.validateRating(requestBody);
 
@@ -251,7 +248,7 @@ public class RatingController {
   public void createRatingHandler(RoutingContext routingContext) {
     LOGGER.debug("Info: Creating Rating");
 
-    JsonObject requestBody = ContextHelper.getValidatedRequest(routingContext);
+    JsonObject requestBody = RoutingContextHelper.getValidatedRequest(routingContext);
     ratingService.createRating(requestBody).onComplete(handler -> {
       if (handler.succeeded()) {
         routingContext.response().setStatusCode(201).end(handler.result().toString());
@@ -276,7 +273,7 @@ public class RatingController {
       String requestType = request.getParam("type");
       if (requestType.equalsIgnoreCase("average") || requestType.equalsIgnoreCase("group")) {
         requestBody.put("type", requestType);
-        ContextHelper.setValidatedRequest(routingContext, requestBody);
+        RoutingContextHelper.setValidatedRequest(routingContext, requestBody);
         routingContext.next(); // Skip the authHandler
       } else {
         response
@@ -304,13 +301,12 @@ public class RatingController {
     HttpServerRequest request = routingContext.request();
     JsonObject requestBody;
     if (!request.params().contains("type")) {
-      LOGGER.debug("jwtData: " + ContextHelper.getJwtDecodedInfo(routingContext).toJson());
-      String userID = ContextHelper.getJwtDecodedInfo(routingContext).getSub();
+      String userID = RoutingContextHelper.getJwtDecodedInfo(routingContext).getSub();
       requestBody = new JsonObject()
           .put(ID, request.getParam(Constants.ID))
           .put(USER_ID, userID);
     } else {
-      requestBody = ContextHelper.getValidatedRequest(routingContext);
+      requestBody = RoutingContextHelper.getValidatedRequest(routingContext);
     }
 
     ratingService.getRating(requestBody).onComplete(handler -> {
@@ -331,7 +327,6 @@ public class RatingController {
       }
     });
   }
-
   boolean isValidId(String id) {
     return UUID_PATTERN.matcher(id).matches();
   }
@@ -345,8 +340,7 @@ public class RatingController {
     LOGGER.debug("Info: Updating Rating");
     HttpServerResponse response = routingContext.response();
     response.putHeader(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON);
-
-    JsonObject requestBody = ContextHelper.getValidatedRequest(routingContext);
+    JsonObject requestBody = RoutingContextHelper.getValidatedRequest(routingContext);
 
     ratingService.updateRating(requestBody).onComplete(handler -> {
       if (handler.succeeded()) {
@@ -379,7 +373,7 @@ public class RatingController {
 
     JsonObject requestBody =
         new JsonObject()
-            .put(USER_ID, ContextHelper.getJwtDecodedInfo(routingContext).getSub())
+            .put(USER_ID, RoutingContextHelper.getJwtDecodedInfo(routingContext).getSub())
             .put(ID, id);
     ratingService.deleteRating(requestBody).onComplete(dbHandler -> {
       if (dbHandler.succeeded()) {
@@ -397,49 +391,4 @@ public class RatingController {
     });
   }
 
-  private void auditHandler(RoutingContext routingContext) {
-    JwtData jwtDecodedInfo = ContextHelper.getJwtDecodedInfo(routingContext);
-    String httpMethod = routingContext.request().method().toString();
-    String id = routingContext.queryParams().get(ID);
-
-    if (hasAuditService) {
-      updateAuditTable(
-          jwtDecodedInfo.toJson(),
-          new String[] {id,
-              ROUTE_ITEMS, httpMethod});
-    }
-  }
-
-  /**
-   * function to handle call to audit service.
-   *
-   * @param jwtDecodedInfo contains the user-role, user-id, iid
-   * @param otherInfo      contains item-id, api-endpoint and the HTTP method.
-   */
-  private void updateAuditTable(JsonObject jwtDecodedInfo, String[] otherInfo) {
-    LOGGER.info("Updating audit table on successful transaction");
-    JsonObject auditInfo = jwtDecodedInfo;
-    ZonedDateTime zst = ZonedDateTime.now();
-    LOGGER.debug("TIME ZST: " + zst);
-    long epochTime = getEpochTime(zst);
-    auditInfo
-        .put(IUDX_ID, otherInfo[0])
-        .put(API, otherInfo[1])
-        .put(HTTP_METHOD, otherInfo[2])
-        .put(EPOCH_TIME, epochTime)
-        .put(USERID, jwtDecodedInfo.getString("sub"));
-    LOGGER.debug("audit auditInfo: " + auditInfo);
-    auditingService.insertAuditingValuesInRmq(auditInfo)
-        .onSuccess(result -> {
-          LOGGER.info("Message published in RMQ.");
-        })
-        .onFailure(err -> {
-          LOGGER.error("Failed to publish message in RMQ.", err);
-        });
-
-  }
-
-  private long getEpochTime(ZonedDateTime zst) {
-    return zst.toInstant().toEpochMilli();
-  }
 }

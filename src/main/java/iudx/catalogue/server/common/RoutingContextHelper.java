@@ -14,7 +14,7 @@ import iudx.catalogue.server.authenticator.model.JwtData;
  * including JWT authentication info, decoded JWT details, and validated request data.
  * </p>
  */
-public class ContextHelper {
+public class RoutingContextHelper {
 
   private static final String JWT_DECODED_INFO = "jwtDecodedInfo";
   private static final String JWT_AUTH_INFO_KEY = "jwtAuthenticationInfo";
