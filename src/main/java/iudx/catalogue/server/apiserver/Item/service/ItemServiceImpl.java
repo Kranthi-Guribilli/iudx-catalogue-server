@@ -106,10 +106,8 @@ public class ItemServiceImpl implements ItemService {
           }
           return Future.succeededFuture(doc);
         })
-        .compose(this::enrichItem)
-        .onSuccess(document -> {
-          promise.complete(successfulItemOperationResp(document, "Success: Item created"));
-        })
+        .compose(this::addVectorAndGeographicInfoToItem)
+        .onSuccess(document -> promise.complete(successfulItemOperationResp(document, "Success: Item created")))
         .onFailure(err -> {
           if ("Item already exists".equals(err.getMessage())) {
             LOGGER.error("Fail: Item exists; ID: " + id);
@@ -323,7 +321,7 @@ public class ItemServiceImpl implements ItemService {
     return promise.future();
   }
 
-  private Future<JsonObject> enrichItem(JsonObject doc) {
+  private Future<JsonObject> addVectorAndGeographicInfoToItem(JsonObject doc) {
     Promise<JsonObject> promise = Promise.promise();
     doc.put(SUMMARY_KEY, Summarizer.summarize(doc));
     String instanceId = doc.getString(INSTANCE);
