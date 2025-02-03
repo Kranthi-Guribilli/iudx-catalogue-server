@@ -112,7 +112,7 @@ public class StacController {
           .onComplete(stackHandler -> {
             if (stackHandler.succeeded()) {
               JsonObject resultJson = stackHandler.result();
-              handleSuccessResponse(response, 200, resultJson.toString());
+              handleSuccessResponse(response, resultJson.toString());
             } else {
               LOGGER.error("Fail: Stack not found;" + stackHandler.cause().getMessage());
               processBackendResponse(response, stackHandler.cause().getMessage());
@@ -274,7 +274,7 @@ public class StacController {
         .onSuccess(stacServiceResult -> {
           LOGGER.debug("stacServiceResult : " + stacServiceResult);
           Future.future(fu -> auditHandler.updateAuditTable(authInfo));
-          handleSuccessResponse(response, 200, stacServiceResult.toString());
+          handleSuccessResponse(response, stacServiceResult.toString());
         }).onFailure(
             stacServiceFailure -> {
               LOGGER.error("Fail: DB request has failed;" + stacServiceFailure.getMessage());
@@ -318,8 +318,8 @@ public class StacController {
     }
   }
 
-  private void handleSuccessResponse(HttpServerResponse response, int statusCode, String result) {
-    response.putHeader(CONTENT_TYPE, APPLICATION_JSON).setStatusCode(statusCode).end(result);
+  private void handleSuccessResponse(HttpServerResponse response, String result) {
+    response.putHeader(CONTENT_TYPE, APPLICATION_JSON).setStatusCode(200).end(result);
   }
 
 }

@@ -75,7 +75,6 @@ public class Constants {
   public static final String PROVIDER_ITEM = "pvdrItem";
   public static final String DATA_DES_ITEM = "dataDesItem";
   public static final String USERID = "userid";
-  public static final String SUB = "sub";
 
   public static final String ROUTE_GET_ITEM = "/items";
   public static final String ROUTE_COUNT = "/count";

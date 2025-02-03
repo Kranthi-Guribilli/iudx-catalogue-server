@@ -1,6 +1,5 @@
 package iudx.catalogue.server.auditing.handler;
 
-import static iudx.catalogue.server.apiserver.util.Constants.SUB;
 import static iudx.catalogue.server.apiserver.util.Constants.USERID;
 import static iudx.catalogue.server.auditing.util.Constants.API;
 import static iudx.catalogue.server.auditing.util.Constants.EPOCH_TIME;

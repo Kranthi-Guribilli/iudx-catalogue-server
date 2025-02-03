@@ -54,7 +54,7 @@ public class MlayerController {
         .produces(MIME_APPLICATION_JSON)
         .failureHandler(failureHandler)
         .handler(
-            routingContext -> populateAuthInfo(routingContext, REQUEST_POST, ROUTE_MLAYER_INSTANCE))
+            routingContext -> populateAuthInfo(routingContext, REQUEST_POST))
         .handler(authenticationHandler) // Authentication
         .handler(
             routingContext -> {
@@ -78,8 +78,7 @@ public class MlayerController {
         .delete(ROUTE_MLAYER_INSTANCE)
         .produces(MIME_APPLICATION_JSON)
         .failureHandler(failureHandler)
-        .handler(routingContext -> populateAuthInfo(routingContext, REQUEST_DELETE,
-            ROUTE_MLAYER_INSTANCE))
+        .handler(routingContext -> populateAuthInfo(routingContext, REQUEST_DELETE))
         .handler(authenticationHandler) // Authentication
         .handler(
             routingContext -> {
@@ -98,7 +97,7 @@ public class MlayerController {
         .produces(MIME_APPLICATION_JSON)
         .failureHandler(failureHandler)
         .handler(
-            routingContext -> populateAuthInfo(routingContext, REQUEST_PUT, ROUTE_MLAYER_INSTANCE))
+            routingContext -> populateAuthInfo(routingContext, REQUEST_PUT))
         .handler(authenticationHandler) // Authentication
         .handler(
             routingContext -> {
@@ -119,7 +118,7 @@ public class MlayerController {
         .produces(MIME_APPLICATION_JSON)
         .failureHandler(failureHandler)
         .handler(
-            routingContext -> populateAuthInfo(routingContext, REQUEST_POST, ROUTE_MLAYER_DOMAIN))
+            routingContext -> populateAuthInfo(routingContext, REQUEST_POST))
         .handler(authenticationHandler) // Authentication
         .handler(
             routingContext -> {
@@ -145,7 +144,7 @@ public class MlayerController {
         .produces(MIME_APPLICATION_JSON)
         .failureHandler(failureHandler)
         .handler(
-            routingContext -> populateAuthInfo(routingContext, REQUEST_PUT, ROUTE_MLAYER_DOMAIN))
+            routingContext -> populateAuthInfo(routingContext, REQUEST_PUT))
         .handler(authenticationHandler) // Authentication
         .handler(
             routingContext -> {
@@ -163,7 +162,7 @@ public class MlayerController {
         .produces(MIME_APPLICATION_JSON)
         .failureHandler(failureHandler)
         .handler(
-            routingContext -> populateAuthInfo(routingContext, REQUEST_DELETE, ROUTE_MLAYER_DOMAIN))
+            routingContext -> populateAuthInfo(routingContext, REQUEST_DELETE))
         .handler(authenticationHandler) // Authentication
         .handler(
             routingContext -> {
@@ -359,13 +358,12 @@ public class MlayerController {
   }
 
   /* Populate authentication info */
-  public void populateAuthInfo(RoutingContext routingContext, String method, String endpoint) {
-
+  public void populateAuthInfo(RoutingContext routingContext, String method) {
     HttpServerRequest request = routingContext.request();
     JwtAuthenticationInfo jwtAuthenticationInfo = new Builder()
         .setToken(request.getHeader(HEADER_TOKEN))
         .setMethod(method)
-        .setApiEndpoint(endpoint)
+        .setApiEndpoint(routingContext.normalizedPath())
         .setId(host)
         .build();
 
@@ -382,14 +380,10 @@ public class MlayerController {
     LOGGER.debug("Info: Domain Created");
 
     JsonObject requestBody = routingContext.body().asJsonObject();
-    HttpServerRequest request = routingContext.request();
     HttpServerResponse response = routingContext.response();
-
     response.putHeader(HEADER_CONTENT_TYPE, MIME_APPLICATION_JSON);
 
     Future<JsonObject> validationFuture = validatorService.validateMlayerDomain(requestBody);
-
-
     validationFuture.onFailure(validationFailureHandler -> {
       response
           .setStatusCode(400)

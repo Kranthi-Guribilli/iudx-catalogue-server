@@ -105,7 +105,7 @@ public class CrudController {
         .handler(
             routingContext -> {
               if (!isUac) {
-                auditHandler.handle(routingContext, ROUTE_ITEMS);
+                auditHandler.handle(routingContext, routingContext.normalizedPath());
               } else {
                 routingContext.next();
               }
@@ -136,7 +136,7 @@ public class CrudController {
         .handler(
             routingContext -> {
               if (!isUac) {
-                auditHandler.handle(routingContext, ROUTE_ITEMS);
+                auditHandler.handle(routingContext, routingContext.normalizedPath());
               } else {
                 routingContext.next();
               }
@@ -166,7 +166,7 @@ public class CrudController {
         .handler(
             routingContext -> {
               if (!isUac) {
-                auditHandler.handle(routingContext, ROUTE_ITEMS);
+                auditHandler.handle(routingContext, routingContext.normalizedPath());
               } else {
                 routingContext.next();
               }
@@ -218,7 +218,7 @@ public class CrudController {
     routingContext.next();
   }
 
-  private void createOrUpdateItemHandler(RoutingContext routingContext) {
+  void createOrUpdateItemHandler(RoutingContext routingContext) {
     HttpServerResponse response = routingContext.response();
     JsonObject validatedRequest = RoutingContextHelper.getValidatedRequest(routingContext);
 

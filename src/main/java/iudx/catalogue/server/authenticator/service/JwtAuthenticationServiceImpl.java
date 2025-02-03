@@ -45,12 +45,14 @@ public class JwtAuthenticationServiceImpl implements AuthenticationService {
   final String audience;
   final String consumerAudience;
   final String issuer;
+  final String dxApiBasePath;
 
   public JwtAuthenticationServiceImpl(final JWTAuth jwtAuth, final JsonObject config) {
     this.jwtAuth = jwtAuth;
     this.audience = config.getString("host");
     this.consumerAudience = config.getString("consumerHost");
     this.issuer = config.getString("issuer");
+    this.dxApiBasePath = config.getString("dxApiBasePath");
   }
 
   @Override
@@ -203,12 +205,12 @@ public class JwtAuthenticationServiceImpl implements AuthenticationService {
     Promise<Boolean> promise = Promise.promise();
 
     LOGGER.debug("Endpoint in JWt is : " + endPoint);
-    if (endPoint.equals(ROUTE_ITEMS)
-        || endPoint.equals(ROUTE_INSTANCE)
-        || endPoint.equals(RATINGS_ENDPOINT)
-        || endPoint.equals(ROUTE_MLAYER_INSTANCE)
-        || endPoint.equals(ROUTE_MLAYER_DOMAIN)
-        || endPoint.equals(ROUTE_STACK)) {
+    if (endPoint.equals(RATINGS_ENDPOINT)
+        || endPoint.equals(dxApiBasePath + ROUTE_ITEMS)
+        || endPoint.equals(dxApiBasePath + ROUTE_INSTANCE)
+        || endPoint.equals(dxApiBasePath + ROUTE_MLAYER_INSTANCE)
+        || endPoint.equals(dxApiBasePath + ROUTE_MLAYER_DOMAIN)
+        || endPoint.equals(dxApiBasePath + ROUTE_STACK)) {
       promise.complete(true);
     } else {
       LOGGER.error("Incorrect endpoint in jwt");
